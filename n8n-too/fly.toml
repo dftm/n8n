@@ -18,3 +18,15 @@ primary_region = 'ams'
   memory = '2gb'
   cpu_kind = 'shared'
   cpus = 1
+
+app = "your-app-name"
+   
+[build]
+  dockerfile = "Dockerfile"
+   
+[env]
+  PORT = "5678"
+
+[mounts]
+  source = "n8n_data"
+  destination = "/home/node/.n8n"
