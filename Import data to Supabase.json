@@ -1,0 +1,297 @@
+{
+  "name": "Import data to Supabase",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a3c5ecac-da81-43c0-a912-c5cb7575df02",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "classtermanual",
+          "mode": "list",
+          "cachedResultName": "classtermanual"
+        },
+        "embeddingBatchSize": 100,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        992,
+        0
+      ],
+      "id": "f2662d2e-9cf8-418c-9eee-8b12838da25a",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uXbLDDrwViC8WWu7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        928,
+        192
+      ],
+      "id": "a87fe722-235a-4c5a-a07a-c49f2ae44e02",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "loader": "docxLoader",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1120,
+        208
+      ],
+      "id": "74db5ce5-155c-4a85-b634-3dce267eaa00",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        1168,
+        384
+      ],
+      "id": "2fe8cab2-9ebc-48c2-aea3-752e897f647d",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        -208
+      ],
+      "id": "cccc267d-3aad-42fc-97d9-8d1fb57e21d1",
+      "name": "When chat message received",
+      "webhookId": "18a1b0dd-d785-4a62-850d-3903d7aa6633"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://mybfxfpraomgoplidcln.supabase.co/functions/v1/hybrid-search-trigger",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im15YmZ4ZnByYW9tZ29wbGlkY2xuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQzMjU3MTksImV4cCI6MjA3OTkwMTcxOX0.xcwrmKub2kr9bJE4_oxSEztNPtTgrso_EcTnSIurVmA"
+            },
+            {
+              "name": "apikey",
+              "value": "sb_publishable_1bm51Ms8ze1YzMBEOWVOZA_iD66PPPX"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "name",
+              "value": "Functions"
+            }
+          ]
+        },
+        "options": {
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        384,
+        -208
+      ],
+      "id": "e9929363-e317-4835-8e0c-6af55dbc23dd",
+      "name": "Supabase Hybrid Function"
+    },
+    {
+      "parameters": {
+        "fileSelector": "C:\\Users\\stathis\\Desktop\\N8n\\Getting to know Classter - Complete.docx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -448
+      ],
+      "id": "ab9922b3-fdda-45aa-a527-48d57a54f1ce",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "1XCf_9K5d1H3RWhtO9a12bG9xoA_4vu6U"
+      },
+      "type": "n8n-nodes-base.googleDocs",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -624
+      ],
+      "id": "2606832b-8e09-4bd5-9ffe-1db07f3bec07",
+      "name": "Get a document",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "khsScdSE8Vf6UisC",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1XCf_9K5d1H3RWhtO9a12bG9xoA_4vu6U",
+          "mode": "list",
+          "cachedResultName": "Getting to know Classter - Complete.docx",
+          "cachedResultUrl": "https://docs.google.com/document/d/1XCf_9K5d1H3RWhtO9a12bG9xoA_4vu6U/edit?usp=drivesdk&ouid=116937448646715839044&rtpof=true&sd=true"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        384,
+        0
+      ],
+      "id": "e9b9703c-5d6a-41c2-9432-ffde89fa4f66",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "U4cpK5A7NpQ7PaCp",
+          "name": "Google Drive account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Supabase Hybrid Function",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        []
+      ]
+    },
+    "Get a document": {
+      "main": [
+        []
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3e6b4620-6ceb-4d22-b3de-03ce5c249233",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "48c0725920f5d781639da7343d288093f7fbeacf6a88f229b55a491ecdedc38f"
+  },
+  "id": "vEFtyDQc6SvQIoLE",
+  "tags": []
+}

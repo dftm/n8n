@@ -1,0 +1,381 @@
+{
+  "name": "Multi-Platform Customer Onboarding Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "eventsUi": {
+          "eventValues": [
+            {
+              "name": "deal.propertyChange",
+              "property": "dealstage"
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "id": "454ead91-f1ad-4e85-a147-fa1d14fca4b8",
+      "name": "HubSpot Deal Won Trigger",
+      "type": "n8n-nodes-base.hubspotTrigger",
+      "typeVersion": 1,
+      "position": [
+        64,
+        -32
+      ],
+      "webhookId": "0c36b1b5-e96c-4a7d-ab6d-b203d5ea5a5f",
+      "credentials": {
+        "hubspotDeveloperApi": {
+          "id": "nI9PZ7ooDWVtRZIn",
+          "name": "HubSpot Developer account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "mondayBoardId",
+              "value": "<__PLACEHOLDER_VALUE__Monday.com Board ID for new projects__>",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "erpApiUrl",
+              "value": "<__PLACEHOLDER_VALUE__ERP API Base URL__>",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "classterApiUrl",
+              "value": "https://internalportal.classter.com/api",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "af79380c-3bcd-4f7a-b1bc-e7a634dab610",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        304,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $('HubSpot Deal Won Trigger').item.json.dealstage }}",
+              "rightValue": "closedwon",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "id-2",
+              "leftValue": "={{ $('HubSpot Deal Won Trigger').item.json.dealstage }}",
+              "rightValue": "won",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "id": "12f6e7fa-f080-43b7-b1e9-65d6c6f9e9a2",
+      "name": "Check Deal Status",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        480,
+        -48
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "boardItem",
+        "boardId": "={{ $('Workflow Configuration').first().json.mondayBoardId }}",
+        "groupId": "<__PLACEHOLDER_VALUE__Monday.com Group ID__>",
+        "name": "={{ $json.dealname || $json.properties?.dealname || 'New Customer Project' }}",
+        "additionalFields": {}
+      },
+      "id": "962dfb6f-ff0e-47c2-b992-bdc69a15229d",
+      "name": "Create Monday Project",
+      "type": "n8n-nodes-base.mondayCom",
+      "typeVersion": 1,
+      "position": [
+        688,
+        -80
+      ],
+      "credentials": {
+        "mondayComOAuth2Api": {
+          "id": "dd2t5cFvpZy1xfzE",
+          "name": "Monday.com account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "name": "={{ $json.company || $json.properties?.company || 'New Customer' }}",
+        "email": "={{ $json.email || $json.properties?.email || '<__PLACEHOLDER_VALUE__Customer Email__>' }}",
+        "additionalFields": {
+          "phone": "={{ $json.phone || $json.properties?.phone || '' }}"
+        }
+      },
+      "id": "62455eb7-17fe-4c0f-8f24-d3563fdcabbf",
+      "name": "Create FreshDesk Customer",
+      "type": "n8n-nodes-base.freshdesk",
+      "typeVersion": 1,
+      "position": [
+        896,
+        0
+      ],
+      "credentials": {
+        "freshdeskApi": {
+          "id": "j8q2b1RaFXijBeSo",
+          "name": "Freshdesk account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Workflow Configuration').first().json.erpApiUrl }}/customers",
+        "authentication": "genericCredentialType",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"={{ $json.company || $json.properties?.company }}\",\n  \"email\": \"={{ $json.email || $json.properties?.email }}\",\n  \"dealId\": \"={{ $json.dealId || $json.hs_object_id }}\"\n}",
+        "options": {}
+      },
+      "id": "fd3aed0a-3def-4a6e-afee-20d814130c6a",
+      "name": "Create ERP Customer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Workflow Configuration').first().json.erpApiUrl }}/subscriptions",
+        "authentication": "genericCredentialType",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"customerId\": \"={{ $json.id || $json.customerId }}\",\n  \"planName\": \"<__PLACEHOLDER_VALUE__Subscription Plan Name__>\",\n  \"startDate\": \"={{ $now.toISO() }}\"\n}",
+        "options": {}
+      },
+      "id": "86b781d8-3e6e-4807-970e-6029c3564bef",
+      "name": "Create ERP Subscription",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1344,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Workflow Configuration').first().json.classterApiUrl }}/customer-installations",
+        "authentication": "genericCredentialType",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"customerId\": {{ $('Create ERP Customer').first().json.id }},\n  \"customerName\": \"{{ $('Create ERP Customer').first().json.name }}\",\n  \"subscriptionId\": {{ $json.id || $json.subscriptionId }},\n  \"installationDate\": \"{{ $now.toISO() }}\"\n}",
+        "options": {}
+      },
+      "id": "db9a88fc-5fa3-4cef-814f-4ab1ae00032f",
+      "name": "Create Customer Installation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1568,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "### Hubspot integration\nIn hubspot go to:\nSettings → Integrations → Legacy Apps->Public App.\n\nthen:\n1. Create a Public app\n2. Name\n3. Add Description (optional) \n4. Navigate to Scopes\n5. Add New Scope\n\nAdd the following Scopes:\ncrm.objects.deals.read  \ncrm.objects.contacts.read  \ncrm.objects.companies.read\n\nAfter the public app is created, get the ClientID, Client Secret, AppID ,from the apps auth tab, and input them in the **HubSpot Deal Won Trigger's** credentials.",
+        "height": 448,
+        "width": 416
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -176,
+        208
+      ],
+      "id": "c04e154b-e75f-48c1-b8dd-1b7d62a22cbe",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        64,
+        -320
+      ],
+      "id": "4d716989-06f9-41e2-8703-04e5b22db89f",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "hubspot-deal-won",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -192,
+        -160
+      ],
+      "id": "74380446-678b-4237-ae1b-2c7c8c2c2d5b",
+      "name": "Webhook",
+      "webhookId": "540e918c-31b3-4f56-8033-e6c78ebeb3ce"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HubSpot Deal Won Trigger": {
+      "main": [
+        []
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "Check Deal Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Deal Status": {
+      "main": [
+        [
+          {
+            "node": "Create Monday Project",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Monday Project": {
+      "main": [
+        [
+          {
+            "node": "Create FreshDesk Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create FreshDesk Customer": {
+      "main": [
+        [
+          {
+            "node": "Create ERP Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create ERP Customer": {
+      "main": [
+        [
+          {
+            "node": "Create ERP Subscription",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create ERP Subscription": {
+      "main": [
+        [
+          {
+            "node": "Create Customer Installation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        []
+      ]
+    },
+    "Webhook": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ae8cd5ef-865b-47e0-9861-23fa75bf1801",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "48c0725920f5d781639da7343d288093f7fbeacf6a88f229b55a491ecdedc38f"
+  },
+  "id": "rWTxcHW5DjmOygdR",
+  "tags": []
+}

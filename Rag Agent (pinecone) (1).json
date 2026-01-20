@@ -1,0 +1,547 @@
+{
+  "name": "Rag Agent (pinecone)",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "responseNodes"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "6c6ea35f-9bdc-4095-9fe5-da184fab1d08",
+      "name": "When chat message received",
+      "webhookId": "f580eee5-4f5a-4a54-9439-6c3cde37dcaf"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=You are an AI assistant specialized in analyzing the Classter platform manual. Your primary task is to answer user questions accurately and precisely based on the content stored in the vector database, which contains documents from “Getting to Know Classter – Complete Manual.”\n\nCore Rules:\nUse only information retrieved from the manual (via vector search) or established, verifiable expert knowledge about standard system behavior.\nDo not fabricate or assume details.\nIf the information is missing, incomplete, or unclear in the indexed documents, state clearly:\n“The manual does not provide sufficient information on this topic.”\nAvoid speculation and avoid giving instructions that are not supported by the manual.\n\nResponse Style:\nYour answers must be:\n1. Concise and direct — focus only on what the user needs.\n2.Specific — include exact steps, field names, menu paths, system labels, or numbers when provided in the manual.\n3.Traceable — clearly reference the section or title of the document your answer comes from (e.g., “According to the section ‘User Management Overview’…”).\n\nObjective:\nHelp users quickly find features, settings, navigation paths, and usage instructions within Classter, without unnecessary context or unrelated details."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        208,
+        0
+      ],
+      "id": "771162d1-6e78-4505-a1f9-25482eb7763f",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 20
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        144,
+        256
+      ],
+      "id": "7e2f3e29-f787-4e55-aa04-3d26f3ee02c0",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "description": "=You are an AI assistant specialized in answering questions strictly based on the Classter platform documentation. The vector store attached to this workflow contains the document “Getting to Know Classter – Complete.”\n\nYour rules:\n\n1. Only use the context returned from the vector store to answer the question. If the retrieved context does not contain enough information, reply: “The manual does not provide sufficient information on this topic.”\n2. Do not invent or assume anything outside the provided text. No speculation, no hallucinated features, no made-up steps.\n3. Be concise and direct.\n4. Include specific navigation paths, labels, steps, or numbers when the manual provides them.\n5. Reference the source section/title when possible (e.g., “According to the ‘Attendance Settings’ section…”).\n6. If the context appears unrelated or incomplete, ask the user to refine the question.\n\nYour objective:\nProvide accurate, efficient answers on how to use, find, or navigate features in the Classter platform, based solely on the manual’s content."
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolVectorStore",
+      "typeVersion": 1.1,
+      "position": [
+        272,
+        256
+      ],
+      "id": "12f2e537-1b06-4741-a84b-4f8b7427f637",
+      "name": "Answer questions with a vector store"
+    },
+    {
+      "parameters": {
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "n8ndocs",
+          "mode": "list",
+          "cachedResultName": "n8ndocs"
+        },
+        "options": {
+          "pineconeNamespace": "n8ndoc"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        128,
+        448
+      ],
+      "id": "80c6d97b-c4d8-4764-b752-08be2197acdc",
+      "name": "Pinecone Vector Store",
+      "credentials": {
+        "pineconeApi": {
+          "id": "y0v2e563PZUKZal1",
+          "name": "PineconeApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -16,
+        624
+      ],
+      "id": "6a8435e0-38bb-4dd1-8603-bffccac7fb69",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        464,
+        448
+      ],
+      "id": "0c4444cc-5f11-497f-ac99-df7361a3e13b",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        208
+      ],
+      "id": "7233cf29-c0ac-4f57-9c40-e39bb7963b11",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are the Feedback Evaluation and Answer Improvement Agent.\n\nYour purpose:\nEvaluate user feedback about an answer generated by the main AI Agent, determine the user’s satisfaction, and improve the answer only when appropriate.\n\nInputs:\n- user_question: {{ $('When chat message received').item.json.chatInput }}\n- original_answer: {{ $('AI Agent').item.json.output }}\n- user_feedback: {{ $json.chatInput }}\n\n-----------------------\nFEEDBACK INTERPRETATION RULES\n-----------------------\n\n1. Distinguish Feedback from New Questions:\n- If the message contains a question mark (?), treat it as a NEW QUESTION, not feedback.\n- If the message introduces new information not present in the original question, treat it as a NEW QUESTION.\n- If the message is short (3 words or fewer), treat it as feedback unless it contains a question.\n\nIf identified as a NEW QUESTION:\nRespond with:\n{\n  \"status\": \"new_question\",\n  \"final_answer\": \"\",\n  \"explanation\": \"User asked a new question — pass back to main agent.\"\n}\n\n-----------------------\nSATISFACTION DETECTION\n-----------------------\n\n2. Detect Satisfaction:\nIf the feedback contains:\n- \"yes\", \"good\", \"helpful\", \"thanks\", \"perfect\", \"great\", or other clear positive sentiment  \n→ Mark as satisfied.\n\n3. Detect Dissatisfaction:\nIf the feedback contains:\n- \"no\", \"not good\", \"wrong\", \"unclear\", \"doesn't help\", \"explain better\"  \n→ Mark as not satisfied.\n\n4. If the feedback is ambiguous (e.g., “hmm,” “maybe,” emojis, unclear sentiment):\nReturn:\n{\n  \"status\": \"unclear\",\n  \"final_answer\": \"\",\n  \"explanation\": \"Feedback unclear — requesting clarification\"\n}\nAnd ask the user:\n“Please let me know if you would like me to improve the answer.”\n\n-----------------------\nANSWER IMPROVEMENT RULES\n-----------------------\n\nIf the user IS satisfied:\nReturn:\n{\n  \"status\": \"ok\",\n  \"final_answer\": \"{{ $('AI Agent').item.json.output }}\",\n  \"explanation\": \"User satisfied\"\n}\n\nIf the user is NOT satisfied:\nImprove the answer using the following rules:\n\n- Do NOT introduce any new facts that were not present in the original answer.\n- Do NOT speculate or invent missing information.\n- Improve only clarity, structure, tone, and readability.\n- You may reorganize the answer for better flow, but the meaning must remain identical.\n- If the user requests additional details that were not in the original answer, respond:\n  “I cannot add new information, but I can rewrite or clarify the existing answer.”\n\nThen return:\n{\n  \"status\": \"improved\",\n  \"final_answer\": \"<improved answer>\",\n  \"explanation\": \"Improved based on feedback\"\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        992,
+        0
+      ],
+      "id": "9c74ada3-0149-43ed-9265-df76f12222a3",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        928,
+        272
+      ],
+      "id": "e6005bae-a54d-423c-ba17-f46eda4b7ea2",
+      "name": "OpenAI Chat Model2",
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "message": "=Here’s your answer:\n\n{{ $json.output }}\n\nWas this answer helpful? \nPlease reply with: \n\"yes\", \"no\", or give additional feedback.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1,
+      "position": [
+        560,
+        0
+      ],
+      "id": "25b7ba7d-9282-4dd9-aa32-923296ff80b0",
+      "name": "Respond to Chat"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"original_answer\": {{ $('AI Agent').item.json.output }},\n  \"user_feedback\": {{ $json.chatInput }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        768,
+        0
+      ],
+      "id": "7c23ff56-ab0b-4a1e-b06c-ebc466661ab2",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1sSfzG-ACJwoqs1IhBAW1kcQpipIYRKt8",
+          "mode": "list",
+          "cachedResultName": "Markdown",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1sSfzG-ACJwoqs1IhBAW1kcQpipIYRKt8"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -480
+      ],
+      "id": "68d9c540-3894-4c27-bdb4-e7ef19d12b7b",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "U4cpK5A7NpQ7PaCp",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileSelector": "C:\\Users\\stathis\\Desktop\\N8n\\Getting to know Classter - Complete.pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -736
+      ],
+      "id": "bca6e4c6-7a5d-40d3-828c-ac4173be99ba",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "content": "## Read from File\n\nThis is an **alternative** to using the Google Drive Trigger. It simply uses a document from you PC as **Knowledge Base**\n",
+        "height": 336,
+        "width": 304
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -16,
+        -880
+      ],
+      "typeVersion": 1,
+      "id": "bd7bd3c7-e55d-4f51-9b1f-325d4fe1920a",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        288,
+        -480
+      ],
+      "id": "895f212c-3017-4063-9dd2-29686355d64a",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "U4cpK5A7NpQ7PaCp",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        640,
+        -272
+      ],
+      "id": "b20c5983-3652-4993-80ea-47036d1a4f81",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "n8nmarkdown",
+          "mode": "list",
+          "cachedResultName": "n8nmarkdown"
+        },
+        "options": {
+          "pineconeNamespace": "n8nmarkdowntest"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        496,
+        -480
+      ],
+      "id": "aa894743-ae69-4505-ae31-730786caeedb",
+      "name": "Pinecone Vector Store1",
+      "credentials": {
+        "pineconeApi": {
+          "id": "y0v2e563PZUKZal1",
+          "name": "PineconeApi account"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "When chat message received": [
+      {
+        "json": {
+          "sessionId": "3f61d30b13454ae8bc7a4f7d432e7e53",
+          "action": "sendMessage",
+          "chatInput": "How do i create an academic period"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Answer questions with a vector store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pinecone Vector Store": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Pinecone Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Answer questions with a vector store",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Chat": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Pinecone Vector Store1",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "b791eb27-a0a9-47b8-a689-b45b2604ab23",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "48c0725920f5d781639da7343d288093f7fbeacf6a88f229b55a491ecdedc38f"
+  },
+  "id": "YBtZkdnZQ0GGs149",
+  "tags": []
+}

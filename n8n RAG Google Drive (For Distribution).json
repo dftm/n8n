@@ -1,0 +1,1368 @@
+{
+  "name": "n8n RAG Google Drive (For Distribution)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1rCI8hR7GjPNURtWML3InvaNSUowwblpI",
+          "mode": "list",
+          "cachedResultName": "n8n_Rag_Content",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1rCI8hR7GjPNURtWML3InvaNSUowwblpI"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        1040
+      ],
+      "id": "a62ec773-e199-413b-aa5b-25611bb08379",
+      "name": "Google Drive Trigger (File Created)"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1rCI8hR7GjPNURtWML3InvaNSUowwblpI",
+          "mode": "list",
+          "cachedResultName": "n8n_Rag_Content",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1rCI8hR7GjPNURtWML3InvaNSUowwblpI"
+        },
+        "event": "fileUpdated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        1248
+      ],
+      "id": "70a9b9d2-f823-4497-9c21-cfd85536af4f",
+      "name": "Google Drive Trigger (File Updated)"
+    },
+    {
+      "parameters": {
+        "content": "## Getting Advanced Metadata + File\nDepending on the action full metadata isn't always returned so we use this node to standardize that.",
+        "height": 420,
+        "width": 500,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -32,
+        960
+      ],
+      "id": "416ac93d-a2a1-466f-935e-44677d6a90c9",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "url": "=https://www.googleapis.com/drive/v3/files/{{ $json.id }}?fields=*",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleDriveOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        80,
+        1136
+      ],
+      "id": "1b2bce19-384d-44f6-9d0f-f8291599db8e",
+      "name": "Get File Metadata"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Get File Metadata').item.json.fileExtension }}",
+                    "rightValue": "docx",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "2dc43d56-3b1e-4ce4-9379-1ec4e80b711f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "docx (Word)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "4a36d50f-22bb-4b8e-ac48-65d9f38bc229",
+                    "leftValue": "={{ $('Get File Metadata').item.json.fileExtension }}",
+                    "rightValue": "doc",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "doc (Word)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "408b664c-228f-4f2a-b2a8-20986220b233",
+                    "leftValue": "={{ $('Get File Metadata').item.json.fileExtension }}",
+                    "rightValue": "md (Markdown)",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "md (Markdown)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "de951052-5bad-4a54-9eb9-f0fb98adeb11",
+                    "leftValue": "={{ $('Get File Metadata').item.json.fileExtension }}",
+                    "rightValue": "pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pdf"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "031a0331-c657-4bad-a02c-25b5a8cf53e5",
+                    "leftValue": "={{ $('Get File Metadata').item.json.fileExtension }}",
+                    "rightValue": "csv",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "csv"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "6c650c09-13c3-43b5-af4b-254adb1fae3b",
+                    "leftValue": "={{ $('Get File Metadata').item.json.fileExtension }}",
+                    "rightValue": "xlsx",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "xlsx (Excel)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a3be894d-b171-4701-8c3d-098f025e5dd5",
+                    "leftValue": "={{ $('Get File Metadata').item.json.fileExtension }}",
+                    "rightValue": "=xls",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "xls (Excel)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "26d1ef1d-d441-441c-86c4-c7181a1e6831",
+                    "leftValue": "={{ $('Get File Metadata').item.json.fileExtension }}",
+                    "rightValue": "txt",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "txt (Text)"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "96c7bdcb-db58-4207-b92b-86153f6b2cf8",
+                    "leftValue": "={{ $('Get File Metadata').item.json.fileExtension }}",
+                    "rightValue": "json",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "json"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        528,
+        1024
+      ],
+      "id": "71dbcec1-5f79-4a43-9fe3-74b21cd4a7c9",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        880,
+        1344
+      ],
+      "id": "7c5785ca-7a18-4dd0-aab1-f49de509ed74",
+      "name": "Extract from XLSX"
+    },
+    {
+      "parameters": {
+        "operation": "xls",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        880,
+        1536
+      ],
+      "id": "cad71736-2ff3-4a5c-8f7a-d45b8069d379",
+      "name": "Extract from XLS"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        880,
+        1744
+      ],
+      "id": "c13598dd-ed2c-4ab4-9339-6ef4aeb2cf97",
+      "name": "Extract from Text"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        880,
+        1136
+      ],
+      "id": "12f8301b-0b45-4970-9975-5fbaba0c704b",
+      "name": "Extract from CSV"
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        880,
+        1936
+      ],
+      "id": "fc852561-5a22-435b-90ea-91f84d19f464",
+      "name": "Extract from JSON",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        880,
+        944
+      ],
+      "id": "114bfed0-dc6c-4907-915b-a181ddbee8a2",
+      "name": "Extract from PDF"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        880,
+        736
+      ],
+      "id": "d92bc184-42b0-4189-b120-cb0ac0715ccc",
+      "name": "Extract MD to Base64"
+    },
+    {
+      "parameters": {
+        "function": "arn:aws:lambda:us-east-1:381492058603:function:pandoc-lambda-function",
+        "payload": "={\n  \"input_format\": \"markdown\",\n  \"output_format\": \"markdown\",\n  \"content\": \"{{ $json.data }}\",\n  \"options\": [\"--wrap=none\"]\n}"
+      },
+      "type": "n8n-nodes-base.awsLambda",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        736
+      ],
+      "id": "5847d48b-789d-4edd-a1ec-6bb37fb9d3e8",
+      "name": "Convert Markdown to Text"
+    },
+    {
+      "parameters": {
+        "function": "arn:aws:lambda:us-east-1:381492058603:function:pandoc-lambda-function",
+        "payload": "={\n  \"input_format\": \"docx\",\n  \"output_format\": \"markdown\",\n  \"content\": \"{{ $json.data }}\",\n  \"options\": [\"--wrap=none\"]\n}"
+      },
+      "type": "n8n-nodes-base.awsLambda",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        336
+      ],
+      "id": "9e072aa1-1510-4e68-9d41-0ac38d9f5ee9",
+      "name": "Convert Docx to Text"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        880,
+        336
+      ],
+      "id": "2f73b8e6-9b47-4fe8-847d-bfe6929038e0",
+      "name": "Extract Docx to Base64"
+    },
+    {
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        880,
+        544
+      ],
+      "id": "1966e2f2-a430-41c6-9410-6a9adb86c8f6",
+      "name": "Extract Doc to Base64"
+    },
+    {
+      "parameters": {
+        "function": "arn:aws:lambda:us-east-1:381492058603:function:pandoc-lambda-function",
+        "payload": "={\n  \"input_format\": \"doc\",\n  \"output_format\": \"markdown\",\n  \"content\": \"{{ $json.data }}\",\n  \"options\": [\"--wrap=none\"]\n}"
+      },
+      "type": "n8n-nodes-base.awsLambda",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        544
+      ],
+      "id": "485d15e9-7598-4c2e-b108-7c166e759b43",
+      "name": "Convert Doc to Text"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "embeddingBatchSize": 512,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.1,
+      "position": [
+        2656,
+        1120
+      ],
+      "id": "0a03a0ae-54c2-48e0-a388-99bc45426d52",
+      "name": "Add Document to VectorDB"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        304,
+        1136
+      ],
+      "id": "53b78757-4679-4a08-93c2-3ec21a576538",
+      "name": "Download Drive File"
+    },
+    {
+      "parameters": {
+        "options": {
+          "dimensions": 1536,
+          "batchSize": 512
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2544,
+        1344
+      ],
+      "id": "31fb3e09-92aa-4d4b-a719-875afd60c581",
+      "name": "Embeddings OpenAI1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "url",
+                "value": "={{ $('Get File Metadata').item.json.webContentLink }}"
+              },
+              {
+                "name": "name",
+                "value": "={{ $('Get File Metadata').item.json.originalFilename }}"
+              },
+              {
+                "name": "title",
+                "value": "={{ $('Get File Metadata').item.json.originalFilename.split(\".\")[0] }}"
+              },
+              {
+                "name": "source",
+                "value": "=google-drive://{{ $('Get File Metadata').item.json.id }}"
+              },
+              {
+                "name": "status",
+                "value": "processed"
+              },
+              {
+                "name": "file_id",
+                "value": "={{ $('Get File Metadata').item.json.id }}"
+              },
+              {
+                "name": "doc_type",
+                "value": "google_drive"
+              },
+              {
+                "name": "language",
+                "value": "=en"
+              },
+              {
+                "name": "file_name",
+                "value": "={{ $('Get File Metadata').item.json.name }}"
+              },
+              {
+                "name": "mime_type",
+                "value": "={{ $('Get File Metadata').item.json.mimeType }}"
+              },
+              {
+                "name": "parent_id",
+                "value": "={{ $('Get File Metadata').item.json.parents[0] }}"
+              },
+              {
+                "name": "permissions",
+                "value": "={{ $('Get File Metadata').item.json.permissions }}"
+              },
+              {
+                "name": "source_type",
+                "value": "google_drive"
+              },
+              {
+                "name": "content_type",
+                "value": "={{ $('Get File Metadata').item.json.mimeType }}"
+              },
+              {
+                "name": "created_time",
+                "value": "={{ $('Get File Metadata').item.json.createdTime }}"
+              },
+              {
+                "name": "processed_at",
+                "value": "={{ $now.toUTC().toString() }}"
+              },
+              {
+                "name": "version_info",
+                "value": "={{ $('Get File Metadata').item.json.version }}"
+              },
+              {
+                "name": "modified_time",
+                "value": "={{ $('Get File Metadata').item.json.modifiedTime }}"
+              },
+              {
+                "name": "access_summary",
+                "value": "={{ $('Get File Metadata').item.json.permissions }}"
+              },
+              {
+                "name": "collection_name",
+                "value": "langchain_docs"
+              },
+              {
+                "name": "ingestion_engine",
+                "value": "n8n-langchain"
+              },
+              {
+                "name": "file_id",
+                "value": "={{ $('Document Data & DB Data').item.json.file_id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        2704,
+        1392
+      ],
+      "id": "a9b06143-7bba-4f67-aa93-a39edff34e31",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkOverlap": 200,
+        "options": {
+          "splitCode": "markdown"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        2736,
+        1648
+      ],
+      "id": "d1805622-486d-4971-9db6-73bc4a1a72ce",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "content": "## Custom Data Extraction with AWS Lambda Function Conversion Functionality (Pandoc)\n\nPandoc is a versatile, open-source document conversion tool that can read and write a broad range of markup formats, including Markdown, HTML, LaTeX, docx, EPUB, and many others. It acts as a \"universal translator\" for documents, allowing users to easily transform content between different file types while preserving structure. Due to its flexibility and wide format support, Pandoc is commonly used in publishing, academic writing, and any environment where document interoperability is essential.\n\nI've put this functionality into an AWS Lambda function that you can use as a universal converter beyond just this project. I've been using it data extraction from file formats that are not natively supported by n8n like doc, docx, etc.\n\nhttps://github.com/Getting-Automated/pandoc-lambda-python",
+        "height": 920,
+        "width": 760,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        528,
+        0
+      ],
+      "id": "663beac3-b471-4f7b-bde3-fd1bdccff76a",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Data Extraction",
+        "height": 2160,
+        "width": 820
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        496,
+        -64
+      ],
+      "id": "6b2371b3-5fca-4fb0-a7b7-b729f655303a",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Existing Documents\n\nThis deletes the existing version of the document that you already have and re-embeds it. n8n's native Update Document Supabase functionality is limited so this is the better approach at this time.",
+        "height": 360,
+        "width": 440
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1936,
+        720
+      ],
+      "id": "962373a4-19cc-4e03-b525-41234d348ef8",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6fce5c15-7c37-460e-9022-d52d70d320dc",
+              "name": "content",
+              "value": "={{ $('Document Data & DB Data').item.json.data.toJsonString() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2448,
+        1120
+      ],
+      "id": "8d957668-0faa-43ae-92fa-e7238e3439d4",
+      "name": "Set Data"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3d8865f5-2629-4286-af68-06349fdc6b80",
+              "name": "data",
+              "value": "={{ $json.data }}",
+              "type": "object"
+            },
+            {
+              "id": "790cf601-42f4-43f4-b754-13c24cc80221",
+              "name": "db_url_identifier",
+              "value": "fqrxxwettssmrzumqlxd",
+              "type": "string"
+            },
+            {
+              "id": "f14ea8e9-cc2c-409e-b1e9-94219c8d7771",
+              "name": "table_name",
+              "value": "documents",
+              "type": "string"
+            },
+            {
+              "id": "cdc446c1-e9cc-477f-b316-585587d0f5c0",
+              "name": "file_id",
+              "value": "={{ $('Download Drive File').item.json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1488,
+        1104
+      ],
+      "id": "9542fc5b-35d8-4332-a00e-038061394b20",
+      "name": "Document Data & DB Data"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2967e340-c395-4863-8221-6e9cfab3987b",
+              "name": "data",
+              "value": "={{ $json.result.body }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1344,
+        560
+      ],
+      "id": "776e9146-42a7-49ea-93a5-eccf4959f534",
+      "name": "Set Data From Lambda"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "tableId": "documents",
+        "filterType": "string",
+        "filterString": "=metadata->>file_id=eq.{{ $('Download Drive File').item.json.id }}&select=*"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2016,
+        896
+      ],
+      "id": "b14a858d-282e-4144-85b6-e517908d145f",
+      "name": "Supabase"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "944a178a-0e46-4fa1-9dca-4a2e348daefb",
+              "leftValue": "={{ $json.content }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1888,
+        1104
+      ],
+      "id": "6b6d5df1-f5cf-49d8-9cee-6ec10cead3bc",
+      "name": "If Data Already Exists"
+    },
+    {
+      "parameters": {
+        "content": "## Advanced Chunking Not Available + Chunk Matching can be difficult + Unable to update embedding metadata\nn8n does not natively support advanced chunking (respecting boundaries of content, etc.). This could be solved for with a code node pretty easily, but is unlikely to function in the exact way that we have configured it in the Python Version.\n\nAdditionally, in our python version the unique ID we're using is the Google Doc ID + the chunk number. What becomes difficult though is that given langchain's native chunking limitations, you're not able to match that easily when updating.",
+        "height": 360,
+        "width": 460,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2448,
+        720
+      ],
+      "id": "2a60eec2-3822-4fe3-854f-dd01e9ef7b16",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Why Support So Many File Types?\n\nData extraction methods can vary significantly based on the file type. By accommodating multiple file types, you expand the range of documents that can be ingested, enriching the overall capabilities of your RAG solution.",
+        "height": 120,
+        "width": 820
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        496,
+        2128
+      ],
+      "id": "2a7125da-eddf-4333-a242-caecb4d716c5",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "documents",
+        "returnAll": true,
+        "filterType": "string",
+        "filterString": "=metadata->>file_id=eq.{{ $('Download Drive File').item.json.id }}&select=*"
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1696,
+        1104
+      ],
+      "id": "58117fdd-330c-4300-9d3a-b804c0bf70b7",
+      "name": "Supabase1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2208,
+        896
+      ],
+      "id": "78d9eb98-331e-4aec-bc5a-626d91cabb92",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "content": "## Community Now Available!\n\nWe’ve heard you loud and clear—sometimes the YouTube videos just don’t go deep enough, and you’re looking for more hands-on guidance to learn how to build automations for yourself and others. That’s why we’re super excited to announce that we've created an exclusive automation community, capped at 250 members, where we’ll be sharing all kinds of resources to help you dive even deeper.\n\n### What You Get from the Getting Automated Community:\n- **In-depth Automation Workflows**: Learn how to integrate AI into your automation processes with step-by-step guides.\n- **Battle-Tested Templates**: Access exclusive, production-ready automation templates that save you time and effort.\n- **Expert Guidance**: Get direct support from automation professionals with 15+ years of experience.\n- **Early Access to Content**: Be the first to access exclusive content and behind-the-scenes insights.\n- **AI-Enhanced Solutions**: Implement AI-powered automations that go beyond simple workflows, improving over time.\n- **Exclusive Resource Library**: Gain access to a comprehensive collection of templates, internal build resources, and AI prompts.\n- **Private Support Channels**: Receive personalized support through direct chat, office hours, and troubleshooting assistance.\n- **Community of Serious Builders**: Connect with like-minded professionals dedicated to real business outcomes through AI and automation.\n- **Exclusive Founding Member Benefits**: Lock in a lifetime rate, early access to upcoming courses, and special community privileges.\n  \n\n## Join Today to become a Founding Member\n#### https://resources.gettingautomated.com\n",
+        "height": 504,
+        "width": 1006,
+        "color": 6
+      },
+      "id": "8c4b79a2-0a60-4c7b-adbb-bc144777bbba",
+      "name": "Sticky Note6",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -544,
+        1424
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## About Getting Automated\n\nGetting Automated is dedicated to empowering small and medium-sized businesses with the knowledge and tools to implement effective automation strategies. Founded by Hunter Sneed, we provide education, training resources, and practical insights to help businesses streamline their processes and boost efficiency through automation.\n\nIf this video or workflow has you wanting more in terms of how this all works and how you can get individualized support on learning to build this yourself, check out the links below.\n\n## Links\n- **Website**: https://gettingautomated.com\n- **YouTube Channel**: https://www.youtube.com/@hunterasneed\n- **Free Workflow Automation Tools**: https://tools.gettingautomated.com\n- **YouTube Video**: https://youtu.be/auxO_NYTexc",
+        "height": 496,
+        "width": 580,
+        "color": 4
+      },
+      "id": "48b752d5-9c4b-4e8e-bbce-593bdae4d690",
+      "name": "Sticky Note7",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1344,
+        1424
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Want to Work Together or have this built for you?\n\n### Let's Talk - Feel free to setup time with me using the link below.\n\n#### https://calendly.com/workflowsy/30-minute-connect",
+        "width": 998,
+        "color": 6
+      },
+      "id": "ba727886-219f-462c-a28b-9438c1ffc052",
+      "name": "Sticky Note9",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -544,
+        2080
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Code Based Version + Documentation\n\nPlease see https://github.com/Getting-Automated/n8n-and-code-rag for the code based version as well as additional documentation.",
+        "height": 120,
+        "width": 998,
+        "color": 6
+      },
+      "id": "7057a1c8-6bfe-4ae6-83bc-786a46a6b0c2",
+      "name": "Sticky Note10",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -544,
+        1936
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Drive Trigger (File Created)": {
+      "main": [
+        [
+          {
+            "node": "Get File Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Drive Trigger (File Updated)": {
+      "main": [
+        [
+          {
+            "node": "Get File Metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get File Metadata": {
+      "main": [
+        [
+          {
+            "node": "Download Drive File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Extract Docx to Base64",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract Doc to Base64",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract MD to Base64",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from CSV",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from XLSX",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from XLS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract from JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract MD to Base64": {
+      "main": [
+        [
+          {
+            "node": "Convert Markdown to Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Docx to Base64": {
+      "main": [
+        [
+          {
+            "node": "Convert Docx to Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Doc to Base64": {
+      "main": [
+        [
+          {
+            "node": "Convert Doc to Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Drive File": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from PDF": {
+      "main": [
+        [
+          {
+            "node": "Document Data & DB Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Doc to Text": {
+      "main": [
+        [
+          {
+            "node": "Set Data From Lambda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Docx to Text": {
+      "main": [
+        [
+          {
+            "node": "Set Data From Lambda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from CSV": {
+      "main": [
+        [
+          {
+            "node": "Document Data & DB Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from XLSX": {
+      "main": [
+        [
+          {
+            "node": "Document Data & DB Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from XLS": {
+      "main": [
+        [
+          {
+            "node": "Document Data & DB Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from Text": {
+      "main": [
+        [
+          {
+            "node": "Document Data & DB Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert Markdown to Text": {
+      "main": [
+        [
+          {
+            "node": "Set Data From Lambda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from JSON": {
+      "main": [
+        [
+          {
+            "node": "Document Data & DB Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Add Document to VectorDB",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Add Document to VectorDB",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Data": {
+      "main": [
+        [
+          {
+            "node": "Add Document to VectorDB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document Data & DB Data": {
+      "main": [
+        [
+          {
+            "node": "Supabase1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Data From Lambda": {
+      "main": [
+        [
+          {
+            "node": "Document Data & DB Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If Data Already Exists": {
+      "main": [
+        [
+          {
+            "node": "Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase1": {
+      "main": [
+        [
+          {
+            "node": "If Data Already Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Set Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ccb5fdf4-69df-4c26-b152-256c34a79ffe",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "48c0725920f5d781639da7343d288093f7fbeacf6a88f229b55a491ecdedc38f"
+  },
+  "id": "cqqAKeXAmliB4HDh",
+  "tags": []
+}

@@ -1,0 +1,1258 @@
+{
+  "name": "⚠️ This ⚠️",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "=You are the AI assistant for Classter, a platform specializing in advanced educational technology solutions. Your task is to help users by consulting the official Classter platform documentation and learning from previous user interactions.\n\nAvailable Tools:\n- Supabase Vector Store1 (productDocs): Contains the complete \"Getting to Know Classter\" manual with step-by-step guides, technical configurations, and official documentation.\n- feedbackPositive: Previous responses rated positively by users. Use these as examples for tone, clarity, and structure.\n- feedbackNegative: Previous responses rated negatively by users. Review these to identify and avoid similar mistakes or unclear explanations.\n\nBehavior Rules:\n\nSearch & Response Strategy:\n1. Always query the productDocs tool (Supabase Vector Store1) first for factual information about Classter features and functionality.\n2. Also query feedbackPositive to find successful examples of similar answers and improve your communication style.\n3. Query feedbackNegative to identify common pitfalls and avoid repeating mistakes that users found unhelpful.\n4. If multiple tools return relevant results, synthesize the information to provide the most accurate and helpful answer.\n5. Only use information retrieved from the vector stores - never invent features, steps, or functionality not present in the documentation.\n6. If the retrieved context doesn't contain enough information, respond: \"The manual does not provide sufficient information on this topic.\"\n7. Respond directly and clearly, explaining exactly how to perform the requested task.\n8. Include specific navigation paths, button labels, and step numbers when the manual provides them.\n9. Reference the source section or title when possible (e.g., \"According to the 'Attendance Settings' section…\").\n\nLanguage (Strict Per-Message Rule):\n- Detect the language of each incoming message individually.\n- Respond in the same language as the most recent message.\n- Do not use the language of previous messages or conversation history to decide the language.\n\nLinks (Not Allowed):\n- Never provide links, even if the user requests them.\n- If a user asks for a link, respond with: \"I cannot provide links. If you need specific information, let me know and I will help with the details.\"\n\nResponse Style:\n- Use a professional, direct, and human tone.\n- Keep responses between 2 and 4 lines unless the user asks for more detail.\n- Be concise but complete - avoid speculation or assumptions.\n- If your answer contains numbered steps or lists, always number them sequentially (1, 2, 3...) without skipping or repeating numbers, even if the original content uses a different numbering style.\n- If the question is unclear or the context appears incomplete, ask the user to refine their question.\n\nYour objective: Provide accurate, efficient answers on how to use, find, or navigate features in the Classter platform, based strictly on the documentation and informed by previous user feedback patterns."
+        }
+      },
+      "id": "33b42b4e-afc0-4cb6-96d6-fc4c0f78bf17",
+      "name": "Knowledge Base Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        16,
+        512
+      ],
+      "typeVersion": 1.9
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "4955a8c3-16dd-4061-b69f-17f34e600c97",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        -272,
+        720
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "WBdL9oHvy9Bsg0SX",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "doc_id",
+                "value": "={{ $json.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "39c2e330-af0f-4ef3-a348-6b77da01a6af",
+      "name": "Document Section Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        3504,
+        -208
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "chunkSize": 3000,
+        "chunkOverlap": 200,
+        "options": {
+          "splitCode": "markdown"
+        }
+      },
+      "id": "d63fe5bc-9e0c-48bc-8dfd-e324a9307b62",
+      "name": "Document Chunker",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        3696,
+        -32
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "82911d26-1ad8-4a07-b86b-a9d9637da4e7",
+      "name": "OpenAI Embeddings Generator",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "position": [
+        3360,
+        -208
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "WBdL9oHvy9Bsg0SX",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "https://docs.google.com/document/d/1XCf_9K5d1H3RWhtO9a12bG9xoA_4vu6U/edit?rtpof=true&tab=t.0"
+      },
+      "id": "5ada572b-2849-463e-a14f-fb5b1a676019",
+      "name": "Google Docs Importer",
+      "type": "n8n-nodes-base.googleDocs",
+      "position": [
+        2864,
+        -720
+      ],
+      "typeVersion": 2,
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "khsScdSE8Vf6UisC",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "Run this workflow manually to import and index Google Docs product documentation into MongoDB with vector embeddings for fast search.",
+        "color": 5
+      },
+      "id": "ae57550e-821a-44f2-82de-3fd3cc243ae8",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -624,
+        0
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "This workflow uses retrieval-augmented generation (RAG) to answer user questions by searching the MongoDB vector store and generating AI responses enhanced with Telegram-based RLHF feedback.",
+        "height": 180,
+        "color": 4
+      },
+      "id": "5e7a3c11-2687-4431-8e1f-9f7ee3e49f6a",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -624,
+        544
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "Documentation Search Index\n\n{\n  \"mappings\": {\n    \"dynamic\": false,\n    \"fields\": {\n      \"_id\": {\n        \"type\": \"string\"\n      },\n      \"text\": {\n        \"type\": \"string\"\n      },\n      \"embedding\": {\n        \"type\": \"knnVector\",\n        \"dimensions\": 1536,\n        \"similarity\": \"cosine\"\n      },\n      \"source\": {\n        \"type\": \"string\"\n      },\n      \"doc_id\": {\n        \"type\": \"string\"\n      }\n    }\n  }\n}\n\n\nFeedback Search Index\n\n{\n  \"mappings\": {\n    \"dynamic\": false,\n    \"fields\": {\n      \"prompt\": {\n        \"type\": \"string\"\n      },\n      \"response\": {\n        \"type\": \"string\"\n      },\n      \"text\": {\n        \"type\": \"string\"\n      },\n      \"embedding\": {\n        \"type\": \"knnVector\",\n        \"dimensions\": 1536,\n        \"similarity\": \"cosine\"\n      },\n      \"feedback\": {\n        \"type\": \"token\"\n      }\n    }\n  }\n}\n",
+        "height": 1040,
+        "width": 520
+      },
+      "id": "1b873872-9029-49a2-a32d-3518b7a462bb",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1600,
+        16
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {},
+      "id": "4e2e9f07-78c6-47fd-a4e7-eb3efecbfb05",
+      "name": "When clicking \"Execute Workflow\"",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        2864,
+        -864
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "collectionName": "n8n-template-chat-history"
+      },
+      "id": "da9ef7c1-4b78-4429-b1d5-41d089d30d8e",
+      "name": "MongoDB Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryMongoDbChat",
+      "position": [
+        3392,
+        0
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "mongoDb": {
+          "id": "nVvwk9CsY27I2Qnw",
+          "name": "MongoDB account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.text }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "prompt",
+                "value": "={{ $json.prompt }}"
+              },
+              {
+                "name": "response",
+                "value": "={{ $json.response }}"
+              },
+              {
+                "name": "feedback",
+                "value": "={{ $json.feedback }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "f63cd6ca-6e95-436d-9214-ba08e4b48a3d",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        3232,
+        576
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "chunkSize": 4000,
+        "options": {}
+      },
+      "id": "78811389-4b0f-4422-a311-ccac816e7e62",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        3264,
+        752
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "operation": "sendAndWait",
+        "chatId": "={{ $('Receive Message on Telegram').item.json.message.chat.id }}",
+        "message": "={{ $json.output }}",
+        "approvalOptions": {
+          "values": {
+            "approvalType": "double"
+          }
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "f4565a04-e73a-4662-b324-22695b559dd7",
+      "name": "Send Message on Telegram, Wait for Feedback",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        2880,
+        -112
+      ],
+      "webhookId": "ed8fc221-70ad-47df-b70e-6667c580553b",
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "jsCode": "let response;\n\ntry {\n  // Check if the input data and the 'approved' field exist\n  if ($input.first() && $input.first().json && $input.first().json.data && typeof $input.first().json.data.approved !== 'undefined') {\n    response = $input.first().json.data.approved ? \"positive\" : \"negative\";\n  } else {\n    // If 'approved' field is missing or undefined, mark feedback as \"negative\" by default or handle accordingly\n    response = \"negative\";\n  }\n} catch (error) {\n  // In case of any unexpected error, log it and default to negative feedback\n  console.error(\"Error mapping feedback data:\", error);\n  response = \"negative\";\n}\n\nreturn {\n  feedback: response\n};"
+      },
+      "id": "095701c0-9a8c-4459-a916-88503ac991f7",
+      "name": "Map feedback data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        832,
+        512
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "prompt",
+              "value": "={{ $('When chat message received').item.json.chatInput }}"
+            },
+            {
+              "name": "response",
+              "value": "=={{ $('Knowledge Base Agent').item.json.output }}"
+            },
+            {
+              "name": "text",
+              "value": "==Prompt: {{ $('When chat message received').item.json.chatInput }}. Completion: {{$('Knowledge Base Agent').item.json.output}}"
+            },
+            {
+              "name": "feedback",
+              "value": "=={{ $json.feedback }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ae8f9f6d-6f30-4a6a-a936-10d447c01d2f",
+      "name": "Set feedback fields for collection storage",
+      "type": "n8n-nodes-base.set",
+      "position": [
+        1072,
+        512
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "mongoCollection": {
+          "__rl": true,
+          "mode": "list",
+          "value": "n8n-template-feedback",
+          "cachedResultName": "n8n-template-feedback"
+        },
+        "vectorIndexName": "template-feedback-search",
+        "embeddingBatchSize": 1,
+        "options": {}
+      },
+      "id": "56a869bd-1861-4514-ac2f-38401783e0a5",
+      "name": "Submit embedded chat feedback",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreMongoDBAtlas",
+      "position": [
+        3104,
+        384
+      ],
+      "typeVersion": 1.1,
+      "credentials": {
+        "mongoDb": {
+          "id": "4OeZ9C1k7xZs5HsP",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "db020a3a-9eab-47d7-9b4e-0fcdde61a672",
+      "name": "OpenAI Embeddings Generator1",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "position": [
+        3104,
+        560
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "WBdL9oHvy9Bsg0SX",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "mongoCollection": {
+          "__rl": true,
+          "value": "n8n-template",
+          "mode": "list"
+        },
+        "vectorIndexName": "data_index",
+        "options": {}
+      },
+      "id": "14227e56-c5ee-4307-b7c5-2f520fa794fb",
+      "name": "MongoDB Documentation Inserter",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreMongoDBAtlas",
+      "position": [
+        3360,
+        -384
+      ],
+      "typeVersion": 1.1,
+      "credentials": {
+        "mongoDb": {
+          "id": "nVvwk9CsY27I2Qnw",
+          "name": "MongoDB account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "# Geia sou Stathi\n\n## I'm a note \n\n**Double click** to edit me. [Guide](https://docs.n8n.io/workflows/sticky-notes/)",
+        "height": 368
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -624,
+        752
+      ],
+      "typeVersion": 1,
+      "id": "a5ef3154-96c1-4940-bf2b-68e73867ba1f",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "# Geia sou Demetri\n\n##  I'm a note \n\n**Double click** to edit me. [Guide](https://docs.n8n.io/workflows/components/sticky-notes/)",
+        "height": 256
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -624,
+        1152
+      ],
+      "typeVersion": 1,
+      "id": "73b7a105-f177-4578-adb5-8ba73efc2bea",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "trigger": [
+          "message"
+        ],
+        "channelId": {
+          "__rl": true,
+          "value": "https://app.slack.com/client/T09TBRJJTT3/C09SWTWLK1C",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.slackTrigger",
+      "typeVersion": 1,
+      "position": [
+        2608,
+        -96
+      ],
+      "id": "91557554-910e-4ff5-b6e3-cc9c7c69384a",
+      "name": "Slack Trigger",
+      "webhookId": "9154dfba-8579-4bf2-b14f-74ac1a7a8b9e",
+      "credentials": {
+        "slackApi": {
+          "id": "4ByZ7r8kwz8pGBoA",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "channel",
+        "operation": "getAll",
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.3,
+      "position": [
+        2864,
+        -560
+      ],
+      "id": "5d6e089a-9d9f-4808-bbd5-dc4dc033f5fb",
+      "name": "Get many channels",
+      "webhookId": "cf295ab0-c5b6-46a1-b209-89ba2599db56",
+      "credentials": {
+        "slackApi": {
+          "id": "4ByZ7r8kwz8pGBoA",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "triggerOn": "specificFolder",
+        "folderToWatch": {
+          "__rl": true,
+          "value": "1bMMyU7wrONxMR8wdPjziLhslfoLUmoTG",
+          "mode": "list",
+          "cachedResultName": "N8n",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1bMMyU7wrONxMR8wdPjziLhslfoLUmoTG"
+        },
+        "event": "fileCreated",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        2880,
+        -384
+      ],
+      "id": "15aabbcb-53c7-4078-ac88-4486f722bc4c",
+      "name": "Google Drive Trigger",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "U4cpK5A7NpQ7PaCp",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3120,
+        -384
+      ],
+      "id": "2cb558fd-ef92-472d-8cd1-b46b4cedee85",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "U4cpK5A7NpQ7PaCp",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "responseNodes"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -176,
+        512
+      ],
+      "id": "31b72e0c-4925-4bc7-8c2f-ea6989600ffe",
+      "name": "When chat message received",
+      "webhookId": "19630088-1e01-4cc0-beb7-8a7a075b36b3"
+    },
+    {
+      "parameters": {
+        "content": "## Obselite\n**Double click** to edit me. [Guide](https://docs.n8n.io/workflows/components/sticky-notes/)",
+        "height": 1888,
+        "width": 1408,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2512,
+        -944
+      ],
+      "id": "79cdbc9c-66e4-4617-90eb-941ffa0e1a20",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "classtermanual",
+          "mode": "list",
+          "cachedResultName": "classtermanual"
+        },
+        "embeddingBatchSize": 100,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        -128
+      ],
+      "id": "51fa56dc-a9a6-4672-bc51-f4773b61e8c9",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uXbLDDrwViC8WWu7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        608,
+        1200
+      ],
+      "id": "41611cc2-ed8a-412e-baf9-e7292c627cf7",
+      "name": "Embeddings OpenAI2",
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "loader": "docxLoader",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        560,
+        96
+      ],
+      "id": "94c16bfd-da20-4e11-8bd1-0b930d30f3ce",
+      "name": "Default Data Loader1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        608,
+        272
+      ],
+      "id": "42449061-2df4-44b5-811e-490a5ebc7dcc",
+      "name": "Recursive Character Text Splitter1"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1XCf_9K5d1H3RWhtO9a12bG9xoA_4vu6U",
+          "mode": "list",
+          "cachedResultName": "Getting to know Classter - Complete.docx",
+          "cachedResultUrl": "https://docs.google.com/document/d/1XCf_9K5d1H3RWhtO9a12bG9xoA_4vu6U/edit?usp=drivesdk&ouid=116937448646715839044&rtpof=true&sd=true"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -176,
+        -128
+      ],
+      "id": "b1563b8b-20ba-4f78-b7fd-475023cc5a13",
+      "name": "Download file1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "U4cpK5A7NpQ7PaCp",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -112,
+        720
+      ],
+      "id": "2a663ef5-1370-420d-8f36-89adc9953ecb",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=You are an AI assistant specialized in answering questions strictly based on the Classter platform documentation. The vector store attached to this workflow contains the document “Getting to Know Classter – Complete.”\n\nYour rules:\n\n1. Only use the context returned from the vector store to answer the question. If the retrieved context does not contain enough information, reply: “The manual does not provide sufficient information on this topic.”\n2. Do not invent or assume anything outside the provided text. No speculation, no hallucinated features, no made-up steps.\n3. Be concise and direct.\n4. Include specific navigation paths, labels, steps, or numbers when the manual provides them.\n5. Reference the source section/title when possible (e.g., “According to the ‘Attendance Settings’ section…”).\n6. If the context appears unrelated or incomplete, ask the user to refine the question.\n\nYour objective:\nProvide accurate, efficient answers on how to use, find, or navigate features in the Classter platform, based solely on the manual’s content.",
+        "tableName": {
+          "__rl": true,
+          "value": "classtermanual",
+          "mode": "list",
+          "cachedResultName": "classtermanual"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        352,
+        928
+      ],
+      "id": "851bb054-029b-4662-ab55-24b727046c75",
+      "name": "Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uXbLDDrwViC8WWu7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        1200
+      ],
+      "id": "16d58e07-6329-45d3-bc76-a72e3ff1afaf",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=Retrieve previous answers that were rated positively by users.\nUse these examples to improve clarity, structure, and communication style when forming your response.\nTreat the retrieved results as guidance for tone and organization only — factual accuracy must always come from the official documentation.\nYou can also use this tool to cross-check your answer against successful past patterns and reduce the risk of hallucinations by ensuring consistency with what has worked reliably before.",
+        "tableName": {
+          "__rl": true,
+          "value": "feedback",
+          "mode": "list",
+          "cachedResultName": "feedback"
+        },
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "feedback",
+                "value": "positive"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -192,
+        928
+      ],
+      "id": "d57b065c-8ddf-4c97-af39-9052ebfda1ba",
+      "name": "feedbackPositive",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uXbLDDrwViC8WWu7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -272,
+        1200
+      ],
+      "id": "92551a10-e0e8-4e29-a2fe-cca7096322ca",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=Retrieve previous answers that received negative feedback from users.\nUse these examples to identify patterns of errors, unclear explanations, or hallucination-prone behavior to avoid when generating your response.\nThe purpose of this tool is performance monitoring: reviewing these weaker examples helps you ensure your current answer remains factual, grounded in documentation, and free from unsupported assumptions.\nCompare your draft answer against the issues shown in the retrieved results and adjust to prevent similar mistakes.",
+        "tableName": {
+          "__rl": true,
+          "value": "feedback",
+          "mode": "list",
+          "cachedResultName": "feedback"
+        },
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "feedback",
+                "value": "negative"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        80,
+        928
+      ],
+      "id": "ff7390f9-4f94-4c4f-b0d8-a0d56c89797f",
+      "name": "feedbackNegative",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uXbLDDrwViC8WWu7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -48,
+        1200
+      ],
+      "id": "d73202b1-a524-4281-9319-e29da1fb42cd",
+      "name": "Embeddings OpenAI3",
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "feedback",
+          "mode": "list",
+          "cachedResultName": "feedback"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        1280,
+        512
+      ],
+      "id": "d8b0024d-3dd4-4cca-837a-2f7ce45e1dcd",
+      "name": "Supabase Vector Store2",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uXbLDDrwViC8WWu7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1296,
+        960
+      ],
+      "id": "0231cf3d-6620-4432-a68e-dfddceb6a7f9",
+      "name": "Embeddings OpenAI4",
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        1408,
+        720
+      ],
+      "id": "b600b080-b0c4-4a1e-8180-eff46aa82329",
+      "name": "Default Data Loader2"
+    },
+    {
+      "parameters": {
+        "message": "=Here’s your answer:\n\n{{ $json.output }}\n\nWas this answer helpful? \nPlease reply with: \n\"yes\", \"no\", or give additional feedback.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1,
+      "position": [
+        368,
+        512
+      ],
+      "id": "e6cf8e8e-f874-4c48-ae46-4daa22fe63e5",
+      "name": "Respond to Chat"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "=={{\n  \"original_answer\": $('Knowledge Base Agent').item.json.output,\n  \"user_feedback\": $json.chatInput\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        592,
+        512
+      ],
+      "id": "6722221f-dd85-49a5-8e55-9598dd80782d",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Knowledge Base Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Knowledge Base Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document Section Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "MongoDB Documentation Inserter",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document Chunker": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Document Section Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings Generator": {
+      "ai_embedding": [
+        [
+          {
+            "node": "MongoDB Documentation Inserter",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Docs Importer": {
+      "main": [
+        []
+      ]
+    },
+    "When clicking \"Execute Workflow\"": {
+      "main": [
+        []
+      ]
+    },
+    "MongoDB Chat Memory": {
+      "ai_memory": [
+        []
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Submit embedded chat feedback",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Message on Telegram, Wait for Feedback": {
+      "main": [
+        []
+      ]
+    },
+    "Map feedback data": {
+      "main": [
+        [
+          {
+            "node": "Set feedback fields for collection storage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set feedback fields for collection storage": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Embeddings Generator1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Submit embedded chat feedback",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Trigger": {
+      "main": [
+        []
+      ]
+    },
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "MongoDB Documentation Inserter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Knowledge Base Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "feedbackPositive",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "feedbackNegative",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Supabase Vector Store2",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader1": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter1": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader1",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file1": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Knowledge Base Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        []
+      ]
+    },
+    "Supabase Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "Knowledge Base Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "feedbackPositive": {
+      "ai_tool": [
+        [
+          {
+            "node": "Knowledge Base Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        []
+      ]
+    },
+    "feedbackNegative": {
+      "ai_tool": [
+        [
+          {
+            "node": "Knowledge Base Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI3": {
+      "ai_embedding": [
+        []
+      ]
+    },
+    "Embeddings OpenAI4": {
+      "ai_embedding": [
+        []
+      ]
+    },
+    "Default Data Loader2": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store2",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Chat": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Map feedback data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ade846ec-d370-46eb-9830-275cd7312a3a",
+  "meta": {
+    "instanceId": "48c0725920f5d781639da7343d288093f7fbeacf6a88f229b55a491ecdedc38f"
+  },
+  "id": "CYr4ZmVjD9mBB9Bq",
+  "tags": []
+}

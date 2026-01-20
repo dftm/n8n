@@ -1,0 +1,82 @@
+{
+  "name": "playground",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        176
+      ],
+      "id": "03c441de-29c1-4462-9133-c4807e7827cc",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "alert($input.first().json.chatInput);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "30739365-5c71-4fea-8021-a5c37b3671a7",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -240,
+        16
+      ],
+      "id": "acf5bc4b-c109-485e-b07f-54f7335f616d",
+      "name": "When chat message received",
+      "webhookId": "d0a652f7-5b02-44a1-9f5f-b61d3b151a9a"
+    }
+  ],
+  "pinData": {
+    "When chat message received": [
+      {
+        "json": {
+          "sessionId": "18d7f7a624284194b74de71313f06db8",
+          "action": "sendMessage",
+          "chatInput": "test"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        []
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "31d844af-cd4e-41e0-bbe6-dbd40b272e5c",
+  "meta": {
+    "instanceId": "48c0725920f5d781639da7343d288093f7fbeacf6a88f229b55a491ecdedc38f"
+  },
+  "id": "5DxcmYUvBhjgnKzv",
+  "tags": []
+}

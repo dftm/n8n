@@ -1,0 +1,343 @@
+{
+  "name": "Simple RAG",
+  "nodes": [
+    {
+      "parameters": {
+        "chunkOverlap": 50,
+        "options": {
+          "splitCode": "markdown"
+        }
+      },
+      "id": "473f88a6-4d53-49c9-adac-8d74cb350c0d",
+      "name": "Recursive Character Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "position": [
+        -576,
+        480
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "### Load data into database\nFetch file from Google Drive, split it into chunks and insert into Pinecone index",
+        "height": 806.6556079800943,
+        "width": 978.0454109366399,
+        "color": 7
+      },
+      "id": "b6a2b004-a146-40a6-9bfa-3f7b2c793345",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1248,
+        32
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "content": "### Chat with database\nEmbed the incoming chat message and use it retrieve relevant chunks from the vector store. These are passed to the model to formulate an answer ",
+        "height": 849.4411596574598,
+        "width": 795.4336844920119,
+        "color": 7
+      },
+      "id": "b143cc00-c8aa-4603-ad0e-6475aea83ce5",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "options": {}
+      },
+      "id": "8f8e4f03-0362-45dc-8353-2539469684fd",
+      "name": "Default Data Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "position": [
+        -576,
+        368
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "4311d920-ea2c-4043-b55a-f54684448533",
+      "name": "Question and Answer Chain",
+      "type": "@n8n/n8n-nodes-langchain.chainRetrievalQa",
+      "position": [
+        64,
+        144
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {},
+      "id": "cea62a17-1d30-4b51-a723-5913c0001b98",
+      "name": "Vector Store Retriever",
+      "type": "@n8n/n8n-nodes-langchain.retrieverVectorStore",
+      "position": [
+        240,
+        368
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {},
+      "id": "f5c71344-feab-4401-a478-454802cff389",
+      "name": "When clicking 'Test Workflow' button",
+      "type": "n8n-nodes-base.manualTrigger",
+      "position": [
+        -1424,
+        144
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "afb38872-93d2-4fb2-93b2-062c3fa9d66c",
+      "name": "When clicking 'Chat' button below",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "position": [
+        -144,
+        144
+      ],
+      "webhookId": "066b342b-f2b6-401e-b560-12f5d23b6103",
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "fileSelector": "/tmp/external_data/news.txt",
+        "options": {}
+      },
+      "id": "974961f9-5138-42ba-a8d7-afc6590f5e14",
+      "name": "Read/Write Files from Disk",
+      "type": "n8n-nodes-base.readWriteFile",
+      "position": [
+        -1200,
+        144
+      ],
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {},
+      "id": "d1814555-0c82-4661-93a0-44c8d382f9b0",
+      "name": "In-Memory Vector Store1",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "position": [
+        240,
+        544
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "clearStore": true
+      },
+      "id": "aa48ffa0-d019-4dad-9c31-4cbd2bc9026a",
+      "name": "In-Memory Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "position": [
+        -976,
+        144
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        64,
+        416
+      ],
+      "id": "c2932ceb-06f2-4849-abea-e28684fdf9fe",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1024,
+        384
+      ],
+      "id": "a2b8774a-fdc6-4cbb-b2cc-0f51b4863cb5",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        176,
+        704
+      ],
+      "id": "15bc221c-1678-40c3-8b0e-5b3230dd0c74",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "In-Memory Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store Retriever": {
+      "ai_retriever": [
+        [
+          {
+            "node": "Question and Answer Chain",
+            "type": "ai_retriever",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "In-Memory Vector Store1": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store Retriever",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "In-Memory Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking 'Chat' button below": {
+      "main": [
+        [
+          {
+            "node": "Question and Answer Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking 'Test Workflow' button": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Question and Answer Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "In-Memory Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "In-Memory Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5c3f8f4f-10f1-42c9-a7b8-3d125229ad62",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "48c0725920f5d781639da7343d288093f7fbeacf6a88f229b55a491ecdedc38f"
+  },
+  "id": "q1Ee6E9pVpvu8OgG",
+  "tags": []
+}

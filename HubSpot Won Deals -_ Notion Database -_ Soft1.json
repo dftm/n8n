@@ -1,0 +1,440 @@
+{
+  "name": "HubSpot Won Deals -> Notion Database -> Soft1",
+  "nodes": [
+    {
+      "parameters": {
+        "eventsUi": {
+          "eventValues": [
+            {
+              "name": "deal.propertyChange",
+              "property": "dealstage"
+            }
+          ]
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.hubspotTrigger",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        -176
+      ],
+      "id": "e498d4de-28c0-4508-ad15-376addd9c41f",
+      "name": "HubSpot Trigger",
+      "webhookId": "04dd8f97-3481-4926-a005-71544c88adf5",
+      "credentials": {
+        "hubspotDeveloperApi": {
+          "id": "ZZqUMlyqSJ8WweOC",
+          "name": "HubSpot Developer API Access"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "deal",
+        "operation": "get",
+        "dealId": {
+          "__rl": true,
+          "value": "={{ $json.dealId }}",
+          "mode": "id"
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        -384,
+        -176
+      ],
+      "id": "b0764209-347e-41ed-bc98-f30e5ed55749",
+      "name": "Get a deal",
+      "credentials": {
+        "hubspotOAuth2Api": {
+          "id": "TDNyGyCbf1bRJHhN",
+          "name": "HubSpot Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "9c36c4ad-02ea-48cf-98fd-6b6ca72e21be",
+              "leftValue": "={{ $('HubSpot Trigger').item.json.propertyValue }}",
+              "rightValue": "closedwon",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        224,
+        -176
+      ],
+      "id": "4ef10775-e9de-4165-87f2-ff04707c634f",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "3a2b2009-ecb3-824b-ad76-81888b29fe3a",
+          "mode": "list",
+          "cachedResultName": "High Level PM Board Items",
+          "cachedResultUrl": "https://www.notion.so/3a2b2009ecb3824bad7681888b29fe3a"
+        },
+        "title": "={{ $('Get a deal').item.json.properties.dealname.value }} - New Closed Deal",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Status|select",
+              "selectValue": "New"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        432,
+        -320
+      ],
+      "id": "775c122c-8854-422f-b13d-fb4fc75112ee",
+      "name": "Create a database page",
+      "credentials": {
+        "notionApi": {
+          "id": "m5exyJbJ5jHvc5L1",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "company",
+        "operation": "get",
+        "companyId": {
+          "__rl": true,
+          "value": "={{ $json.associations.associatedCompanyIds[0] }}",
+          "mode": "id"
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        -176,
+        -176
+      ],
+      "id": "b188f0a8-445d-4fb6-850a-3ac64da75122",
+      "name": "Get a company",
+      "credentials": {
+        "hubspotOAuth2Api": {
+          "id": "TDNyGyCbf1bRJHhN",
+          "name": "HubSpot Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "operation": "get",
+        "contactId": {
+          "__rl": true,
+          "value": "={{ $('Get a deal').item.json.associations.associatedVids[0] }}",
+          "mode": "id"
+        },
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2.2,
+      "position": [
+        32,
+        -176
+      ],
+      "id": "cf9c72d9-41a4-4129-9464-a431ba324ff9",
+      "name": "Get a contact",
+      "credentials": {
+        "hubspotOAuth2Api": {
+          "id": "TDNyGyCbf1bRJHhN",
+          "name": "HubSpot Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $('Create a database page').item.json.url }}",
+          "mode": "url"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Contact Email|email",
+              "emailValue": "={{ $('If').item.json.properties.email.value }}"
+            },
+            {
+              "key": "Company Name|rich_text",
+              "textContent": "={{ $('Get a company').item.json.properties.name.value }}"
+            },
+            {
+              "key": "Total Amount|number",
+              "numberValue": "={{ $json.properties.amount.value }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        848,
+        -320
+      ],
+      "id": "1cb759ca-99c9-44fc-bc5f-bf5b9b4a8fad",
+      "name": "Update a database page",
+      "alwaysOutputData": false,
+      "credentials": {
+        "notionApi": {
+          "id": "m5exyJbJ5jHvc5L1",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c7aea016-aa2a-4fbd-9fc8-d7304831a3af",
+              "name": "properties.amount.value",
+              "value": "={{ $('Get a deal').item.json.properties.amount.value }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        -320
+      ],
+      "id": "a427be18-4ea3-4449-aa9b-164f58f88c06",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "resource": "boardItem",
+        "boardId": "1646144464",
+        "groupId": "topics",
+        "name": "={{ $('Get a deal').item.json.properties.dealname.value }} - New Closed Deal ",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.mondayCom",
+      "typeVersion": 1,
+      "position": [
+        688,
+        -64
+      ],
+      "id": "a2feba75-8ecf-405b-abe1-f195b8e6fdbd",
+      "name": "Create an item in a board's group",
+      "credentials": {
+        "mondayComApi": {
+          "id": "dBMjDKQbE7CTgJPJ",
+          "name": "Monday.com account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "boardItem",
+        "operation": "get",
+        "itemId": "={{ $json.id }}"
+      },
+      "type": "n8n-nodes-base.mondayCom",
+      "typeVersion": 1,
+      "position": [
+        848,
+        -64
+      ],
+      "id": "802ba59c-cad6-4d35-b565-cdf61132ada4",
+      "name": "Get an item",
+      "credentials": {
+        "mondayComApi": {
+          "id": "dBMjDKQbE7CTgJPJ",
+          "name": "Monday.com account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "name": "={{ $json.company || $json.properties?.company || 'New Customer' }}",
+        "email": "={{ $json.email || $json.properties?.email || '<__PLACEHOLDER_VALUE__Customer Email__>' }}",
+        "additionalFields": {
+          "phone": "={{ $json.phone || $json.properties?.phone || '' }}"
+        }
+      },
+      "id": "bce406e2-3308-410d-90e9-0eb99c7f5aa8",
+      "name": "Create FreshDesk Customer",
+      "type": "n8n-nodes-base.freshdesk",
+      "typeVersion": 1,
+      "position": [
+        512,
+        -64
+      ],
+      "credentials": {
+        "freshdeskApi": {
+          "id": "j8q2b1RaFXijBeSo",
+          "name": "Freshdesk account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HubSpot Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get a deal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a deal": {
+      "main": [
+        [
+          {
+            "node": "Get a company",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Create a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a company": {
+      "main": [
+        [
+          {
+            "node": "Get a contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a contact": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a database page": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Update a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a database page": {
+      "main": [
+        [
+          {
+            "node": "Create FreshDesk Customer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an item in a board's group": {
+      "main": [
+        [
+          {
+            "node": "Get an item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create FreshDesk Customer": {
+      "main": [
+        [
+          {
+            "node": "Create an item in a board's group",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ec8edcd4-b33f-44e0-b4ec-f2a6601b2bd5",
+  "meta": {
+    "instanceId": "48c0725920f5d781639da7343d288093f7fbeacf6a88f229b55a491ecdedc38f"
+  },
+  "id": "Hz09QBz70bseVva2",
+  "tags": []
+}
