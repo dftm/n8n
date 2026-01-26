@@ -1,0 +1,1682 @@
+{
+  "name": "Rag with Airtable feedback v7",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('When chat message received').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=You are the AI assistant for Classter, a platform specializing in advanced educational technology solutions.\n\nSOURCE OF TRUTH (MANDATORY):\n- You may ONLY use content returned by the Supabase Vector Store tool (Classter manual).\n- Do NOT use general knowledge.\n- Do NOT invent UI labels, navigation paths, permissions, steps, or features not explicitly present in the retrieved excerpts.\n\nMANDATORY SEARCH:\n1) Always call the Supabase Vector Store tool for the user’s question.\n2) Answer ONLY using the returned excerpts.\n\nFALLBACK (EXACT TEXT):\nIf you do NOT retrieve at least one clearly relevant excerpt that directly supports an answer, reply EXACTLY:\n\"The manual does not provide sufficient information on this topic.\"\n\nALSO FALL BACK if:\n- The excerpts are too vague to safely name the exact UI label/path/setting needed, or\n- The excerpts are not clearly about the user’s question.\n\nLANGUAGE:\n- Respond in the same language as the user’s message.\n\nLINKS:\n- Never provide links.\n- If the user asks for links, reply:\n\"I cannot provide links. If you need specific information, let me know and I will help with the details.\"\n\nSTYLE:\n- Professional, direct, human.\n- 2–4 lines unless the manual provides steps; if so, number them (1, 2, 3…).\n- If the question is unclear AND the excerpts are related but incomplete, ask ONE short clarifying question.\n- Otherwise, use the fallback sentence.\n\nOUTPUT:\nReturn only the final answer text (or the fallback sentence exactly). Do not mention tools or internal steps.\n",
+          "maxIterations": 20
+        }
+      },
+      "id": "09d5fd30-5ee5-41b4-aa6f-784b2bd2a7e7",
+      "name": "Knowledge Base Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -2368,
+        544
+      ],
+      "typeVersion": 1.9
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5.2",
+          "mode": "list",
+          "cachedResultName": "gpt-5.2"
+        },
+        "options": {}
+      },
+      "id": "00e45776-bf58-44bf-abf6-db7f9f39ae73",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        -2400,
+        752
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 100
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -2288,
+        848
+      ],
+      "id": "fdfa42df-fa92-493e-b303-0a3bcafb67be",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "message": "=Here’s your answer:\n\n{{ $json.output }}\n\nWas this answer helpful? \nPlease reply with: \n\"yes\", \"no\", or give additional feedback.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1,
+      "position": [
+        -2064,
+        544
+      ],
+      "id": "9c21969b-30f8-4171-9f59-32d3ef0ed391",
+      "name": "Respond to Chat"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=You are an AI assistant specialized in answering questions strictly based on the Classter platform documentation. The vector store attached to this workflow contains the document “Getting to Know Classter – Complete.”\n\nYour rules:\n\n1. Only use the context returned from the vector store to answer the question. If the retrieved context does not contain enough information, reply: “The manual does not provide sufficient information on this topic.”\n2. Do not invent or assume anything outside the provided text. No speculation, no hallucinated features, no made-up steps.\n3. Be concise and direct.\n4. Include specific navigation paths, labels, steps, or numbers when the manual provides them.\n5. Reference the source section/title when possible (e.g., “According to the ‘Attendance Settings’ section…”).\n6. If the context appears unrelated or incomplete, ask the user to refine the question.\n\nYour objective:\nProvide accurate, efficient answers on how to use, find, or navigate features in the Classter platform, based solely on the manual’s content.",
+        "tableName": {
+          "__rl": true,
+          "value": "classtermanual",
+          "mode": "list",
+          "cachedResultName": "classtermanual"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -2176,
+        800
+      ],
+      "id": "3ff59dab-b448-499b-a13c-a4c983b59e37",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uXbLDDrwViC8WWu7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are the Classter Answer Refiner.\n\nINPUTS:\nsession_id: {{ $('When chat message received').item.json.sessionId }}\nuser_question: {{ $('When chat message received').item.json.chatInput }}\noriginal_answer: {{ $('Knowledge Base Agent').item.json.output }}\nuser_feedback: {{ $('Respond to Chat').item.json.chatInput }}\nfeedback_type: {{ $('Classify Feedback').item.json.feedbackType }}\n\nSOURCE OF TRUTH (MANDATORY):\n- Supabase Vector Store (Classter manual) is the ONLY factual source you may use.\n- Do NOT use general knowledge.\n- Do NOT invent UI labels, steps, navigation paths, permissions, or features.\n\nPRIMARY GOAL:\nTry to produce a refined answer supported by the manual.\nIMPORTANT: Even if original_answer equals the fallback message, you MUST still try to find an answer by searching the manual.\n\nMANDATORY RETRIEVAL:\nYou MUST call the Supabase Vector Store tool at least once per run.\n\nSEARCH LIMITS (ANTI-LOOP):\n- You may call Supabase Vector Store at MOST TWO times total.\n- Do not call it more than two times for any reason.\n\nSEARCH PROCEDURE:\n1) Search #1: call Supabase Vector Store with query = user_question.\n2) If Search #1 does not provide clearly relevant support for an answer:\n   - Search #2 (allowed only once): \n     - If feedback_type is \"negative\", query = user_question + \" \" + a short correction hint derived from user_feedback (max 10 words).\n     - Otherwise (positive or unknown), query = user_question rephrased with one short synonym/clarifier (max 10 extra words).\n3) After the allowed searches, STOP.\n\nDECISION RULE:\n- If the retrieved excerpts clearly support a correct answer, output the refined answer.\n- If the excerpts do NOT clearly support an answer OR are irrelevant, output EXACTLY:\n\"The manual does not provide sufficient information on this topic.\"\n\nFEEDBACK HANDLING:\n- If feedback_type is \"positive\": do not change facts; only improve clarity IF supported by the excerpts.\n- If feedback_type is \"negative\": correct only if the excerpts explicitly support the correction.\n- If feedback_type is \"unknown\": treat as neutral; attempt best answer only if supported by excerpts.\n\nLANGUAGE & STYLE:\n- Respond in the same language as user_feedback.\n- 2–4 lines unless the manual provides numbered steps (then number them).\n- No links.\n- Professional and concise.\n\nOUTPUT (STRICT):\nOutput ONLY one of the following:\nA) the refined answer text, OR\nB) exactly: \"The manual does not provide sufficient information on this topic.\"\nDo NOT include tool traces, reasoning, meta commentary, or internal workflow notes.\n",
+        "options": {
+          "maxIterations": 8
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        -1376,
+        544
+      ],
+      "id": "9f00d0c0-5466-4978-860d-986b79371646",
+      "name": "Refiner Agent"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "responseNodes"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -3904,
+        544
+      ],
+      "id": "6d98488f-852b-4ca4-9c68-e638adbbadce",
+      "name": "When chat message received",
+      "webhookId": "72610cca-0778-4989-a48f-4e4549d6df75"
+    },
+    {
+      "parameters": {
+        "content": "## Airtable\nCreated in order to help  improve the knowledge base. \n\n",
+        "height": 352
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        112,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "39c58c6c-1e5c-43c2-aff2-ec322c5da5ad",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## MANUAL PRECHECK\n**IF** OR **SWITCH** node to check if the user question has an aswer. IF not default message.",
+        "height": 256,
+        "width": 624
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3024,
+        464
+      ],
+      "typeVersion": 1,
+      "id": "d660b745-8fd2-424a-9c5b-9e118151527b",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "message": "={{ $json.output }}",
+        "waitUserReply": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1,
+      "position": [
+        192,
+        544
+      ],
+      "id": "121732fe-24be-467b-bb67-5bef4ef84e42",
+      "name": "Final Answer"
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "tableName": {
+          "__rl": true,
+          "value": "classtermanual",
+          "mode": "list",
+          "cachedResultName": "classtermanual"
+        },
+        "prompt": "={{ $('When chat message received').item.json.chatInput }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -2976,
+        560
+      ],
+      "id": "fa0e0952-28b5-483d-a658-2093590af1bd",
+      "name": "Supabase Vector Store (Manual Precheck)",
+      "notesInFlow": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "uXbLDDrwViC8WWu7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8b984430-640b-4afc-b926-dd371f96d5f9",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "af66df29-d71c-4479-b287-dd3f08305732",
+              "leftValue": "={{ $input.first().json.score }}",
+              "rightValue": 0.55,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2688,
+        560
+      ],
+      "id": "2c24f73e-6dab-43f6-896d-3b8fd1f9c036",
+      "name": "IF - Manual Has Results?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "48cbd082-90ca-4ad2-8442-b59a98a89171",
+              "name": "output",
+              "value": "=The manual does not provide sufficient information on this topic.",
+              "type": "string"
+            },
+            {
+              "id": "e7f4955c-9e2f-443e-8d82-b4ea4d4deeb3",
+              "name": "route_taken",
+              "value": "fallback",
+              "type": "string"
+            },
+            {
+              "id": "330ab03e-2bff-4e0b-97dd-f9488f641044",
+              "name": "sessionId",
+              "value": "={{ $('When chat message received').item.json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "75e3c4d5-22e5-4abb-b370-d430cac48420",
+              "name": "original_question",
+              "value": "={{ $('When chat message received').item.json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "238c86ba-52b4-4531-93e2-d797bcd13b10",
+              "name": "kb_answer_initial",
+              "value": "=",
+              "type": "string"
+            },
+            {
+              "id": "483dcdb1-8f28-4c45-9249-77149081d6c7",
+              "name": "user_feedback",
+              "value": "=",
+              "type": "string"
+            },
+            {
+              "id": "c36090bd-01af-4eaa-9bd3-cefbdb21205e",
+              "name": "feedback_type",
+              "value": "=unknown",
+              "type": "string"
+            },
+            {
+              "id": "ed85fe91-c0a6-402e-9de8-92b968056c3e",
+              "name": "memory_top_score",
+              "value": "={{ $items(\"Supabase Vector Store (Feedback Memory Precheck)\")?.[0]?.json?.score ?? null }}",
+              "type": "string"
+            },
+            {
+              "id": "fe0d9b55-f171-455d-a1d4-41e2fd87213c",
+              "name": "manual_top_score",
+              "value": "={{ $items(\"Supabase Vector Store (Manual Precheck)\")?.[0]?.json?.score ?? null }}",
+              "type": "string"
+            },
+            {
+              "id": "0b263237-258a-4d98-8abe-6150d20e9d00",
+              "name": "manual_gap_score",
+              "value": "={{ \n  ($items(\"Supabase Vector Store (Manual Precheck)\")?.[0]?.json?.score ?? 0)\n- ($items(\"Supabase Vector Store (Manual Precheck)\")?.[1]?.json?.score ?? 0)\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2704,
+        1056
+      ],
+      "id": "b9cba7b6-e994-439f-9b97-bf7104373d28",
+      "name": "Set - Fallback"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "aea9c225-7e75-4910-8317-d14242f9f738",
+              "leftValue": "={{ $input.first().json.score - ($input.all()[1]?.json.score ?? 0) }}",
+              "rightValue": 0.03,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -3136,
+        816
+      ],
+      "id": "cab096c4-0ce5-4f1d-9988-e062b1352aee",
+      "name": "Gap safety check"
+    },
+    {
+      "parameters": {
+        "content": "## Gap safety check\n\n\n\n\n\n\n\n\nVector search always returns results, even for off-topic questions.\nA similarity score alone is not enough to determine relevance.\n\nThis check compares the **top result’s score** with the **second-best score**.\n\n**Gap = topScore − secondScore**\n\nA **large gap** means one document is clearly more relevant → safe to route to the Knowledge Base Agent.\n\nA **small gap** means many documents are similarly relevant → likely noise or generic overlap → use fallback.\n\nThis prevents irrelevant questions (e.g. “weather in Classter”) from reaching the agent, while still allowing valid but lower-scoring queries to pass.\n\nThe gap is used as a **secondary safety signal**, not a guarantee of correctness.",
+        "height": 592,
+        "width": 416
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3424,
+        800
+      ],
+      "typeVersion": 1,
+      "id": "800e2136-edb0-4625-84e8-0cce0fd40160",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = ($json.chatInput ?? \"\").trim();\nconst t = raw.toLowerCase();\n\nconst startsWithWord = (word) => new RegExp(`^${word}(\\\\b|\\\\s|[.!?,])`).test(t);\n\nlet feedbackType = \"unknown\"; // <- 3rd state\n\nconst positiveSignals = [\n  \"thank\", \"helped\", \"that helps\", \"works\", \"worked\", \"perfect\", \"great\", \"awesome\", \"correct\"\n];\n\nconst negativeSignals = [\n  \"wrong\", \"incorrect\", \"not helpful\", \"doesn't help\", \"doesnt help\",\n  \"didn't help\", \"didnt help\", \"not working\", \"doesn't work\", \"doesnt work\"\n];\n\n// Strong feedback markers: starts with yes/no\nif (startsWithWord(\"yes\") || startsWithWord(\"yep\") || startsWithWord(\"yeah\") || t === \"y\" || t === \"👍\") {\n  feedbackType = \"positive\";\n} else if (startsWithWord(\"no\") || startsWithWord(\"nope\") || t === \"n\" || t === \"👎\") {\n  feedbackType = \"negative\";\n} else {\n  // Strong feedback markers: explicit phrases\n  if (positiveSignals.some((s) => t.includes(s))) feedbackType = \"positive\";\n  else if (negativeSignals.some((s) => t.includes(s))) feedbackType = \"negative\";\n}\n\nreturn [{ json: { ...$json, feedbackType } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1904,
+        544
+      ],
+      "id": "cbaf01a3-001e-437a-962a-c254edf34690",
+      "name": "Classify Feedback"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "838e6589-1b81-4de9-a25c-2d319d149ca2",
+              "name": "chatInput",
+              "value": "={{ $('Respond to Chat').item.json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "415d0b59-c8a2-4900-bcbf-46a56342a72b",
+              "name": "sessionId",
+              "value": "={{ $('When chat message received').item.json.sessionId }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1568,
+        1184
+      ],
+      "id": "0b969168-86c7-4c5d-a4b4-97d669e3ca6d",
+      "name": "Set fields for Sub-workflow call"
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "tableName": {
+          "__rl": true,
+          "value": "feedback_memory",
+          "mode": "list",
+          "cachedResultName": "feedback_memory"
+        },
+        "prompt": "={{ $('When chat message received').item.json.chatInput }}",
+        "topK": 3,
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "final_answer",
+                "value": "={{ $json.final_answer }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -3728,
+        544
+      ],
+      "id": "b8ea9e02-7db6-4f81-89d6-d93bf5c8e6b5",
+      "name": "Supabase Vector Store (Feedback Memory Precheck)",
+      "notesInFlow": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "uXbLDDrwViC8WWu7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "75727dc9-b65f-48a0-88e3-c49e8b1b1527",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "a85c0816-aa44-41be-a6f6-64ca9b32c02b",
+              "leftValue": "={{ $input.first().json.score }}",
+              "rightValue": 0.72,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -3376,
+        544
+      ],
+      "id": "cd768ed6-4b97-40cd-bc6f-7a8ee3e14827",
+      "name": "If - Memory Exists?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6ad27358-d036-4bfd-9de1-65348b5e2859",
+              "name": "content",
+              "value": "={{\n  \"Q: \" + $('When chat message received').item.json.chatInput\n  + \"\\nA: \" + ($('Knowledge Base Agent').item.json.output ?? \"\")\n}}",
+              "type": "string"
+            },
+            {
+              "id": "003addb7-6250-41ee-8046-858f2098051a",
+              "name": "question",
+              "value": "={{ $('When chat message received').item.json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "76f69dc0-efba-43c3-adeb-03c91f506bc3",
+              "name": "feedback_type",
+              "value": "={{ $('Classify Feedback').item.json.feedbackType }}",
+              "type": "string"
+            },
+            {
+              "id": "93900c44-0273-43fb-886f-bc9b0d5c7843",
+              "name": "sessionId",
+              "value": "={{ $('When chat message received').item.json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "8863f522-fd5e-4de6-80b4-e0370dcce5d4",
+              "name": "final_answer",
+              "value": "={{ $('Knowledge Base Agent').item.json.output ?? \"\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -688,
+        864
+      ],
+      "id": "97fa02d2-7e1d-40be-be1d-60812ba8be2a",
+      "name": "Feedback_memory fields"
+    },
+    {
+      "parameters": {
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "final_answer",
+                "value": "={{ $json.final_answer }}"
+              },
+              {
+                "name": "sessionId",
+                "value": "={{ $json.sessionId }}"
+              },
+              {
+                "name": "feedback_type",
+                "value": "={{ $json.feedback_type }}"
+              },
+              {
+                "name": "question",
+                "value": "={{$json.question}}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -32,
+        1120
+      ],
+      "id": "e996ade5-4648-4d02-aeb7-b3ffdb4b1f1d",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -2176,
+        1232
+      ],
+      "id": "4acfbdbb-a603-45c5-bfd3-30cb3d0fa05c",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "feedback_memory",
+          "mode": "list",
+          "cachedResultName": "feedback_memory"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -192,
+        864
+      ],
+      "id": "2676d290-b0ff-4b09-b14c-ce31526180a9",
+      "name": "Supabase Vector Store(Insert possitive)",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uXbLDDrwViC8WWu7",
+          "name": "Supabase account"
+        }
+      },
+      "notes": "Inserting positive feedback into the vector store to be used in future queries"
+    },
+    {
+      "parameters": {
+        "content": "## TO DO LIST\n\n\n1. **Pinning** doesn't seem to work\n2. **Sub-Workflow error:** claims it has no trigger.\n3. **Test workflow** with the new changes\n4. **Make Money**\n5. **Get Bitches**\n",
+        "height": 256
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -3568,
+        160
+      ],
+      "typeVersion": 1,
+      "id": "8875da3a-9adf-4eeb-b89d-326ff9b0f69a",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8d777ab6-3da5-413b-94bd-a38ad7283590",
+              "name": "route_taken",
+              "value": "subworkflow_new_question",
+              "type": "string"
+            },
+            {
+              "id": "df2beac2-a611-4e6c-ab2f-4609b8a30b48",
+              "name": "output",
+              "value": "={{ \n  $node[\"Call Main RAG Sub-Workflow\"].json?.output\n  ?? $node[\"Call Main RAG Sub-Workflow\"].item?.json?.output\n  ?? \"The manual does not provide sufficient information on this topic.\"\n}}",
+              "type": "string"
+            },
+            {
+              "id": "830d2fa9-7c4b-42cd-9fc0-8bd469330eea",
+              "name": "sessionId",
+              "value": "={{ $('When chat message received').item.json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "75245cf8-6f45-4f8b-82aa-c09ecc57d7f8",
+              "name": "original_question",
+              "value": "={{ $('When chat message received').item.json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "d0cf2b03-f436-470f-8a16-7d076ebe0a1e",
+              "name": "kb_answer_initial",
+              "value": "={{ $node[\"Knowledge Base Agent\"].json?.output ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "e47d2556-4636-4e40-8504-5ffb839e8423",
+              "name": "user_feedback",
+              "value": "={{ $node[\"Respond to Chat\"].json?.chatInput ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "130ba5e5-1682-4c52-a22f-dd3f78e294ad",
+              "name": "feedback_type",
+              "value": "={{ $node[\"Classify Feedback\"].json?.feedbackType ?? \"unknown\" }}",
+              "type": "string"
+            },
+            {
+              "id": "636151f8-ea55-4b9e-ade1-a62d4f3b45a7",
+              "name": "memory_top_score",
+              "value": "={{ $items(\"Supabase Vector Store (Feedback Memory Precheck)\")?.[0]?.json?.score ?? null }}",
+              "type": "string"
+            },
+            {
+              "id": "d9ba32a9-776f-4107-a7f0-ae308ca9f366",
+              "name": "manual_top_score",
+              "value": "={{ $items(\"Supabase Vector Store (Manual Precheck)\")?.[0]?.json?.score ?? null }}",
+              "type": "string"
+            },
+            {
+              "id": "5f477ea9-3b86-4f12-a970-6288baf066d7",
+              "name": "manual_gap_score",
+              "value": "={{ \n  ($items(\"Supabase Vector Store (Manual Precheck)\")?.[0]?.json?.score ?? 0)\n- ($items(\"Supabase Vector Store (Manual Precheck)\")?.[1]?.json?.score ?? 0)\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -992,
+        1184
+      ],
+      "id": "f3c77a96-cd85-4055-a078-45b093933da9",
+      "name": "New Question Route"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "6c4ba681-ddef-471a-a0f6-b307e71aca97",
+              "name": "output",
+              "value": "={{\n  $json?.document?.metadata?.final_answer\n  ?? $json?.metadata?.final_answer\n  ?? $json?.document?.pageContent\n  ?? $json?.pageContent\n  ?? \"\"\n}}",
+              "type": "string"
+            },
+            {
+              "id": "71fda662-d1ff-4d9a-b1c1-953f16ee4059",
+              "name": "sessionId",
+              "value": "={{ $('When chat message received').item.json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "dbd048d4-026f-4851-bf61-c21a58c41b9c",
+              "name": "route_taken",
+              "value": "memory_hit",
+              "type": "string"
+            },
+            {
+              "id": "3c44411a-179f-41b0-8975-9f3a1b54c54c",
+              "name": "original_question",
+              "value": "={{ $('When chat message received').item.json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "7f3d3c8a-ab95-40d9-a942-7da737d9f28e",
+              "name": "kb_answer_initial",
+              "value": "=",
+              "type": "string"
+            },
+            {
+              "id": "c63db82c-0d43-429b-b4c6-93334c434efc",
+              "name": "user_feedback",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "06f88416-3d2b-47c7-981f-aaec04e1f804",
+              "name": "feedback_type",
+              "value": "unknown",
+              "type": "string"
+            },
+            {
+              "id": "05424cd0-bcde-4ba3-b661-553f53641045",
+              "name": "memory_top_score",
+              "value": "={{ $items(\"Supabase Vector Store (Feedback Memory Precheck)\")?.[0]?.json?.score ?? null }}",
+              "type": "string"
+            },
+            {
+              "id": "932e5247-22f1-4045-9b41-8690fdfd37c7",
+              "name": "manual_top_score",
+              "value": "={{ null }}",
+              "type": "string"
+            },
+            {
+              "id": "326a43b0-01c2-48e2-bc35-bede8677b90e",
+              "name": "manual_gap_score",
+              "value": "={{ null }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2672,
+        128
+      ],
+      "id": "4ba75db1-0d15-4d12-972a-723ec7492fcd",
+      "name": "Memory Output Set"
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "base": {
+          "__rl": true,
+          "value": "appvvRTURJIthxq8h",
+          "mode": "list",
+          "cachedResultName": "Feedback Table",
+          "cachedResultUrl": "https://airtable.com/appvvRTURJIthxq8h"
+        },
+        "table": {
+          "__rl": true,
+          "value": "tblR2YHVsfapCjZa4",
+          "mode": "list",
+          "cachedResultName": "Feedback",
+          "cachedResultUrl": "https://airtable.com/appvvRTURJIthxq8h/tblR2YHVsfapCjZa4"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "sessionId": "={{ $json.sessionId }}",
+            "original_question": "={{ $json.original_question }}",
+            "kb_answer_initial": "={{ $json.kb_answer_initial }}",
+            "user_feedback": "={{ $json.user_feedback }}",
+            "final_answer_refined": "={{ $json.output }}",
+            "feedback_type": "={{ $json.feedback_type }}",
+            "memory_top_score": "={{ $json.memory_top_score }}",
+            "manual_top_score": "={{ $json.manual_top_score }}",
+            "manual_gap_score": "={{ $json.manual_gap_score }}",
+            "route_taken": "={{ $json.route_taken }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": true,
+              "removed": true
+            },
+            {
+              "id": "original_question",
+              "displayName": "original_question",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "kb_answer_initial",
+              "displayName": "kb_answer_initial",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "user_feedback",
+              "displayName": "user_feedback",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "final_answer_refined",
+              "displayName": "final_answer_refined",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "feedback_type",
+              "displayName": "feedback_type",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "positive",
+                  "value": "positive"
+                },
+                {
+                  "name": "negative",
+                  "value": "negative"
+                },
+                {
+                  "name": "unknown",
+                  "value": "unknown"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "route_taken",
+              "displayName": "route_taken",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "options",
+              "options": [
+                {
+                  "name": "memory_hit",
+                  "value": "memory_hit"
+                },
+                {
+                  "name": "manual_rag",
+                  "value": "manual_rag"
+                },
+                {
+                  "name": "fallback",
+                  "value": "fallback"
+                },
+                {
+                  "name": "subworkflow_new_question",
+                  "value": "subworkflow_new_question"
+                }
+              ],
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "memory_top_score",
+              "displayName": "memory_top_score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "manual_top_score",
+              "displayName": "manual_top_score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "manual_gap_score",
+              "displayName": "manual_gap_score",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "number",
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "notes_internal",
+              "displayName": "notes_internal",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [
+        192,
+        208
+      ],
+      "id": "0f62d600-e5b0-4ced-bd9a-4b8a09e98b99",
+      "name": "Feedback Logger",
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "d617Jdw2fEPC5dCi",
+          "name": "Airtable Personal Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "JgIoHU_bRXTXR-RujYGGD",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/JgIoHU_bRXTXR-RujYGGD",
+          "cachedResultName": "Main RAG Sub-Workflow"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": true
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        -1248,
+        1184
+      ],
+      "id": "396e8ff5-1fb1-4c8d-8373-d53f262c9d94",
+      "name": "Call Main RAG Sub-Workflow"
+    },
+    {
+      "parameters": {
+        "numberInputs": 5
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -736,
+        496
+      ],
+      "id": "65aed584-abd6-4259-bd1b-0256fedb71c0",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.feedbackType }}",
+                    "rightValue": "positive",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "8ecc9370-d6bb-46f6-a15e-d758d82ca02d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Positive"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "a8093fef-92d3-4b42-be74-b42414af5315",
+                    "leftValue": "={{ $json.feedbackType }}",
+                    "rightValue": "negative",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Negative"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f49f81f4-61ef-4ad7-9214-b2962a233897",
+                    "leftValue": "={{ $json.feedbackType }}",
+                    "rightValue": "unknown",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Unknown"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -1760,
+        528
+      ],
+      "id": "ffc16df1-47ef-4806-863f-03c6f5d50c7d",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "56870982-66a2-4d3a-a22b-83e52321d89a",
+              "name": "route_taken",
+              "value": "manual_rag",
+              "type": "string"
+            },
+            {
+              "id": "4b2d2ba1-cb87-4e2f-b038-d9b416abfe9d",
+              "name": "sessionId",
+              "value": "={{ $('When chat message received').item.json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "4c2aa624-6182-49a1-9e67-db289fbf2633",
+              "name": "output",
+              "value": "=Thank you! If you have another question, feel free to ask!",
+              "type": "string"
+            },
+            {
+              "id": "d0ad4ed3-990a-4ce6-b5fe-615b7ca81034",
+              "name": "original_question",
+              "value": "={{ $('When chat message received').item.json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "23a276f4-8b93-4224-9293-1a27ee40b21c",
+              "name": "kb_answer_initial",
+              "value": "={{ $node[\"Knowledge Base Agent\"].json?.output ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "4467af44-a079-4f81-857d-d8ace4c4f034",
+              "name": "user_feedback",
+              "value": "={{ $node[\"Respond to Chat\"].json?.chatInput ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "cbc4588f-859b-4f7a-883c-0386dc216107",
+              "name": "feedback_type",
+              "value": "={{ $json.feedback_type }}",
+              "type": "string"
+            },
+            {
+              "id": "1d316a58-0a6e-4077-ba19-c0fc4bf69099",
+              "name": "memory_top_score",
+              "value": "={{ $items(\"Supabase Vector Store (Feedback Memory Precheck)\")?.[0]?.json?.score ?? null }}",
+              "type": "string"
+            },
+            {
+              "id": "45131069-4d35-4770-ac58-39214f91b04e",
+              "name": "manual_top_score",
+              "value": "={{ $items(\"Supabase Vector Store (Manual Precheck)\")?.[0]?.json?.score ?? null }}",
+              "type": "string"
+            },
+            {
+              "id": "5357944f-bd50-4525-92bf-fad60c5e2f20",
+              "name": "manual_gap_score",
+              "value": "={{ \n  ($items(\"Supabase Vector Store (Manual Precheck)\")?.[0]?.json?.score ?? 0)\n- ($items(\"Supabase Vector Store (Manual Precheck)\")?.[1]?.json?.score ?? 0)\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1024,
+        336
+      ],
+      "id": "f6e9e8bf-ffc2-499b-a8d3-e73affb50e57",
+      "name": "Manual Route - Positive"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "56870982-66a2-4d3a-a22b-83e52321d89a",
+              "name": "route_taken",
+              "value": "manual_rag",
+              "type": "string"
+            },
+            {
+              "id": "4b2d2ba1-cb87-4e2f-b038-d9b416abfe9d",
+              "name": "sessionId",
+              "value": "={{ $('When chat message received').item.json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "4c2aa624-6182-49a1-9e67-db289fbf2633",
+              "name": "output",
+              "value": "={{ $items(\"Refiner Agent\")[0]?.json?.output ?? $items(\"Knowledge Base Agent\")[0]?.json?.output ?? $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "d0ad4ed3-990a-4ce6-b5fe-615b7ca81034",
+              "name": "original_question",
+              "value": "={{ $('When chat message received').item.json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "23a276f4-8b93-4224-9293-1a27ee40b21c",
+              "name": "kb_answer_initial",
+              "value": "={{ $node[\"Knowledge Base Agent\"].json?.output ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "4467af44-a079-4f81-857d-d8ace4c4f034",
+              "name": "user_feedback",
+              "value": "={{ $node[\"Respond to Chat\"].json?.chatInput ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "cbc4588f-859b-4f7a-883c-0386dc216107",
+              "name": "feedback_type",
+              "value": "={{ $node[\"Classify Feedback\"].json?.feedbackType ?? \"unknown\" }}",
+              "type": "string"
+            },
+            {
+              "id": "1d316a58-0a6e-4077-ba19-c0fc4bf69099",
+              "name": "memory_top_score",
+              "value": "={{ $items(\"Supabase Vector Store (Feedback Memory Precheck)\")?.[0]?.json?.score ?? null }}",
+              "type": "string"
+            },
+            {
+              "id": "45131069-4d35-4770-ac58-39214f91b04e",
+              "name": "manual_top_score",
+              "value": "={{ $items(\"Supabase Vector Store (Manual Precheck)\")?.[0]?.json?.score ?? null }}",
+              "type": "string"
+            },
+            {
+              "id": "5357944f-bd50-4525-92bf-fad60c5e2f20",
+              "name": "manual_gap_score",
+              "value": "={{ \n  ($items(\"Supabase Vector Store (Manual Precheck)\")?.[0]?.json?.score ?? 0)\n- ($items(\"Supabase Vector Store (Manual Precheck)\")?.[1]?.json?.score ?? 0)\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1024,
+        544
+      ],
+      "id": "b4aa9a55-693b-439c-9e42-b32478ddfc2a",
+      "name": "Manual Route - Refiner"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        -2976,
+        128
+      ],
+      "id": "1f9234f4-f897-4cf7-bc3f-b956c2cc6d64",
+      "name": "Limit"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Knowledge Base Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Knowledge Base Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Refiner Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Knowledge Base Agent",
+            "type": "ai_memory",
+            "index": 0
+          },
+          {
+            "node": "Refiner Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Chat": {
+      "main": [
+        [
+          {
+            "node": "Classify Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "Knowledge Base Agent",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Refiner Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refiner Agent": {
+      "main": [
+        [
+          {
+            "node": "Manual Route - Refiner",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store (Feedback Memory Precheck)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store (Manual Precheck)": {
+      "main": [
+        [
+          {
+            "node": "IF - Manual Has Results?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Manual Has Results?": {
+      "main": [
+        [
+          {
+            "node": "Knowledge Base Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gap safety check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Fallback": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Gap safety check": {
+      "main": [
+        [
+          {
+            "node": "Knowledge Base Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Feedback": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set fields for Sub-workflow call": {
+      "main": [
+        [
+          {
+            "node": "Call Main RAG Sub-Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store (Feedback Memory Precheck)": {
+      "main": [
+        [
+          {
+            "node": "If - Memory Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If - Memory Exists?": {
+      "main": [
+        [
+          {
+            "node": "Limit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase Vector Store (Manual Precheck)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Feedback_memory fields": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store(Insert possitive)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store(Insert possitive)",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Supabase Vector Store (Manual Precheck)",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Supabase Vector Store (Feedback Memory Precheck)",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Supabase Vector Store(Insert possitive)",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New Question Route": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 4
+          }
+        ]
+      ]
+    },
+    "Memory Output Set": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Main RAG Sub-Workflow": {
+      "main": [
+        [
+          {
+            "node": "New Question Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Feedback Logger",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Final Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Feedback_memory fields",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Manual Route - Positive",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Refiner Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set fields for Sub-workflow call",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Route - Positive": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Manual Route - Refiner": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Limit": {
+      "main": [
+        [
+          {
+            "node": "Memory Output Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "3ce21103-550e-4778-8e79-8d8b438f0e50",
+  "meta": {
+    "instanceId": "48c0725920f5d781639da7343d288093f7fbeacf6a88f229b55a491ecdedc38f"
+  },
+  "id": "KT7dO7s5xSGEwIiV",
+  "tags": []
+}

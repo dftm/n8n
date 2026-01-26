@@ -1,0 +1,454 @@
+{
+  "name": "Main RAG Sub-Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-5.2",
+          "mode": "list",
+          "cachedResultName": "gpt-5.2"
+        },
+        "options": {}
+      },
+      "id": "3b815be2-66a2-4083-be94-f53ac013448a",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "position": [
+        1136,
+        -16
+      ],
+      "typeVersion": 1.2,
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1344,
+        352
+      ],
+      "id": "1fb58964-2edf-4777-a360-2121b593fa7f",
+      "name": "Embeddings OpenAI2",
+      "credentials": {
+        "openAiApi": {
+          "id": "hi2HEvJkC3eDsfQg",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "=You are an AI assistant specialized in answering questions strictly based on the Classter platform documentation. The vector store attached to this workflow contains the document “Getting to Know Classter – Complete.”\n\nYour rules:\n\n1. Only use the context returned from the vector store to answer the question. If the retrieved context does not contain enough information, reply: “The manual does not provide sufficient information on this topic.”\n2. Do not invent or assume anything outside the provided text. No speculation, no hallucinated features, no made-up steps.\n3. Be concise and direct.\n4. Include specific navigation paths, labels, steps, or numbers when the manual provides them.\n5. Reference the source section/title when possible (e.g., “According to the ‘Attendance Settings’ section…”).\n6. If the context appears unrelated or incomplete, ask the user to refine the question.\n\nYour objective:\nProvide accurate, efficient answers on how to use, find, or navigate features in the Classter platform, based solely on the manual’s content.",
+        "tableName": {
+          "__rl": true,
+          "value": "classtermanual",
+          "mode": "list",
+          "cachedResultName": "classtermanual"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        1360,
+        32
+      ],
+      "id": "41e56c55-ca6a-4ec0-88a3-17e43acf8ea2",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "uXbLDDrwViC8WWu7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "load",
+        "tableName": {
+          "__rl": true,
+          "value": "classtermanual",
+          "mode": "list",
+          "cachedResultName": "classtermanual"
+        },
+        "prompt": "={{ $json.chatInput }}",
+        "topK": 6,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        432,
+        -224
+      ],
+      "id": "deec923a-077e-4827-ab83-c050fe607e0d",
+      "name": "Supabase Vector Store (Manual Precheck)",
+      "notesInFlow": false,
+      "credentials": {
+        "supabaseApi": {
+          "id": "uXbLDDrwViC8WWu7",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8b984430-640b-4afc-b926-dd371f96d5f9",
+              "leftValue": "={{ $input.all().length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "af66df29-d71c-4479-b287-dd3f08305732",
+              "leftValue": "={{ $input.first().json.score }}",
+              "rightValue": 0.55,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        768,
+        -224
+      ],
+      "id": "99d3863a-6d1b-4324-b55d-b9daf1662241",
+      "name": "IF - Manual Has Results?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "48cbd082-90ca-4ad2-8442-b59a98a89171",
+              "name": "output",
+              "value": "=The manual does not provide sufficient information on this topic.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        928,
+        256
+      ],
+      "id": "b3ef0e85-4c8d-42ba-afd5-079dab4bd4ce",
+      "name": "Set - Fallback"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "aea9c225-7e75-4910-8317-d14242f9f738",
+              "leftValue": "={{ $input.first().json.score - ($input.all()[1]?.json.score ?? 0) }}",
+              "rightValue": 0.03,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        448,
+        160
+      ],
+      "id": "5385002f-707e-4b35-8879-8702af1f4e11",
+      "name": "Gap safety check"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        48,
+        -224
+      ],
+      "id": "304cd670-1b8c-4e8c-b631-67ac2fba23f6",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "82f579cf-32b6-418e-a4e2-2958c2dad0d2",
+              "name": "output",
+              "value": "={{ $json.output ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "51bfc462-5df9-4683-9d15-74c903a42378",
+              "name": "route_taken",
+              "value": "subworkflow_new_question",
+              "type": "string"
+            },
+            {
+              "id": "15e6840c-493c-479e-baea-25ed3014324e",
+              "name": "sessionId",
+              "value": "={{ $('When Executed by Another Workflow').item.json.sessionId ?? \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "73aac0ed-5167-4f22-9164-a57dd16cecd9",
+              "name": "original_question",
+              "value": "={{ $('When Executed by Another Workflow').item.json.chatInput ?? \"\" }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1792,
+        -240
+      ],
+      "id": "93b04a52-51c5-46ae-b9dc-ab6eb0c11e2d",
+      "name": "Return Output"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.length ? [items[0]] : [];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        -240
+      ],
+      "id": "51f3c38a-dce8-4129-a26c-2486bce66e8f",
+      "name": "Keep First Item"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.length ? [items[0]] : [];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        256
+      ],
+      "id": "8343c355-8055-425b-bb91-d9c18931781d",
+      "name": "Keep First Item1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('When Executed by Another Workflow').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=You are the AI assistant for Classter. You must answer ONLY using the official “Getting to Know Classter” manual retrieved via the Supabase Vector Store tool.\n\nTOOLS\n- Supabase Vector Store (Classter manual) — the ONLY factual source.\n\nNON-NEGOTIABLE RULES\n- Use ONLY the excerpts returned from Supabase Vector Store.\n- Do NOT invent UI labels, navigation paths, permissions, or steps.\n- If the excerpts do not clearly support the answer, output EXACTLY:\n\"The manual does not provide sufficient information on this topic.\"\n\nSEARCH POLICY (ANTI-LOOP)\n- You may call Supabase Vector Store up to TWO (2) times total.\n- 1st search: query = user question exactly.\n- If the 1st search is irrelevant/insufficient, you may do ONE retry:\n  - query = user question rewritten in simpler keywords (max 12 words).\n- After the 2nd search, you MUST STOP and output the fallback sentence exactly.\n\nOUTPUT STYLE\n- Respond in the same language as the user question.\n- 2–4 lines.\n- Number steps only if the manual excerpts explicitly present steps.\n- No links.\n"
+        }
+      },
+      "id": "ce12dc42-604e-49a8-b23e-0e0e790c3dfa",
+      "name": "Sub - Knowledge Base Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        1168,
+        -240
+      ],
+      "typeVersion": 1.9
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Sub - Knowledge Base Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI2": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Supabase Vector Store (Manual Precheck)",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "Sub - Knowledge Base Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store (Manual Precheck)": {
+      "main": [
+        [
+          {
+            "node": "IF - Manual Has Results?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Manual Has Results?": {
+      "main": [
+        [
+          {
+            "node": "Keep First Item",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Gap safety check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Fallback": {
+      "main": [
+        [
+          {
+            "node": "Return Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gap safety check": {
+      "main": [
+        [
+          {
+            "node": "Keep First Item",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Keep First Item1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store (Manual Precheck)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep First Item": {
+      "main": [
+        [
+          {
+            "node": "Sub - Knowledge Base Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep First Item1": {
+      "main": [
+        [
+          {
+            "node": "Set - Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sub - Knowledge Base Agent": {
+      "main": [
+        [
+          {
+            "node": "Return Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "40cef64b-8230-43c7-bc87-7351bfa9e9d4",
+  "meta": {
+    "instanceId": "48c0725920f5d781639da7343d288093f7fbeacf6a88f229b55a491ecdedc38f"
+  },
+  "id": "JgIoHU_bRXTXR-RujYGGD",
+  "tags": []
+}
