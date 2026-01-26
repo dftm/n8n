@@ -1,5 +1,6 @@
 {
   "name": "Sync Workflows from GitHub",
+  "__comment__": "https://shell.cloud.google.com/?pli=1&show=ide&environment_deployment=ide",
   "nodes": [
     {
       "parameters": {
