@@ -1,0 +1,332 @@
+{
+  "name": "Sync Workflows from GitHub",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "unit": "hours"
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "n8nApi",
+        "resource": "workflow",
+        "operation": "getAll",
+        "options": {}
+      },
+      "name": "List Local n8n Workflows",
+      "type": "n8n-nodes-base.n8nApi",
+      "typeVersion": 1,
+      "position": [
+        620,
+        300
+      ],
+      "credentials": {
+        "n8nApi": {
+          "id": "REPLACE_WITH_YOUR_N8N_API_CREDENTIAL_ID",
+          "name": "n8n API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "owner": "YOUR_GITHUB_USERNAME_OR_ORG",
+        "repository": "YOUR_REPO_NAME",
+        "path": "workflows",
+        "options": {}
+      },
+      "name": "List Repo Files",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 3,
+      "position": [
+        820,
+        300
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "REPLACE_WITH_YOUR_GITHUB_CREDENTIAL_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "name": "Loop Over Files",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 2,
+      "position": [
+        1020,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "{{ $json.name }}",
+              "operation": "endsWith",
+              "value2": ".json"
+            }
+          ]
+        }
+      },
+      "name": "Is it a JSON file?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const workflowName = $json.name.replace('.json', '');\nconst allWorkflows = $items('List Local n8n Workflows')[0].json;\nconst existingWorkflow = allWorkflows.find(wf => wf.name === workflowName);\n\n$json.workflowExists = !!existingWorkflow;\n$json.existingWorkflowId = existingWorkflow ? existingWorkflow.id : null;\n$json.workflowName = workflowName;\n\nreturn $json;"
+      },
+      "name": "Check if Workflow Exists",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1420,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "{{ $json.workflowExists }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1620,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "resource": "repository",
+        "operation": "getContents",
+        "owner": "={{ $node['List Repo Files'].parameter['owner'] }}",
+        "repository": "={{ $node['List Repo Files'].parameter['repository'] }}",
+        "path": "={{ $json.path }}",
+        "options": {}
+      },
+      "name": "Get File Content",
+      "type": "n8n-nodes-base.github",
+      "typeVersion": 3,
+      "position": [
+        1420,
+        400
+      ],
+      "credentials": {
+        "githubApi": {
+          "id": "REPLACE_WITH_YOUR_GITHUB_CREDENTIAL_ID",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const fileContent = $json.content;\nconst decodedContent = Buffer.from(fileContent, 'base64').toString('utf8');\n\ntry {\n  const workflowJson = JSON.parse(decodedContent);\n  // Ensure the name in the file matches the filename for consistency\n  workflowJson.name = $node['Check if Workflow Exists'].json.workflowName;\n  $json.workflowData = workflowJson;\n} catch (e) {\n  console.error('Failed to parse JSON for file:', $node['Check if Workflow Exists'].json.workflowName);\n  return null; // Stop execution for this item if JSON is invalid\n}\n\nreturn $json;"
+      },
+      "name": "Decode and Prep Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1620,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "n8nApi",
+        "resource": "workflow",
+        "operation": "update",
+        "workflowId": "={{ $node['Check if Workflow Exists'].json.existingWorkflowId }}",
+        "jsonData": "={{ JSON.stringify($json.workflowData) }}"
+      },
+      "name": "Update Workflow",
+      "type": "n8n-nodes-base.n8nApi",
+      "typeVersion": 1,
+      "position": [
+        1820,
+        200
+      ],
+      "credentials": {
+        "n8nApi": {
+          "id": "REPLACE_WITH_YOUR_N8N_API_CREDENTIAL_ID",
+          "name": "n8n API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "n8nApi",
+        "resource": "workflow",
+        "operation": "create",
+        "jsonData": "={{ JSON.stringify($json.workflowData) }}"
+      },
+      "name": "Create Workflow",
+      "type": "n8n-nodes-base.n8nApi",
+      "typeVersion": 1,
+      "position": [
+        1820,
+        400
+      ],
+      "credentials": {
+        "n8nApi": {
+          "id": "REPLACE_WITH_YOUR_N8N_API_CREDENTIAL_ID",
+          "name": "n8n API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "List Local n8n Workflows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Local n8n Workflows": {
+      "main": [
+        [
+          {
+            "node": "List Repo Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Repo Files": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Files": {
+      "main": [
+        [
+          {
+            "node": "Is it a JSON file?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is it a JSON file?": {
+      "main": [
+        [
+          {
+            "node": "Check if Workflow Exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Workflow Exists": {
+      "main": [
+        [
+          {
+            "node": "Get File Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Exists?": {
+      "main": [
+        [
+          {
+            "node": "Update Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get File Content": {
+      "main": [
+        [
+          {
+            "node": "Decode and Prep Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decode and Prep Data": {
+      "main": [
+        [
+          {
+            "node": "Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null,
+  "pinData": {},
+  "versionId": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
+  "triggerCount": 1,
+  "tags": [
+    {
+      "name": "GitHub",
+      "id": "1"
+    },
+    {
+      "name": "DevOps",
+      "id": "2"
+    }
+  ]
+}
